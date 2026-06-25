@@ -1,0 +1,131 @@
+"""
+packet_sniffer.py  –  NetGuard
+All captured data is stored in memory and served to the web GUI.
+Nothing is printed to the terminal.
+"""
+
+import threading
+import os
+import sys
+from datetime import datetime
+
+captured_packets = []
+packet_log       = []          # list of dicts for the web UI
+sniffer_running  = False
+sniffer_thread   = None
+
+CAPTURE_FILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "captures", "session.pcap"
+)
+
+
+def _process_packet(pkt):
+    global captured_packets, packet_log
+    try:
+        from scapy.all import IP, TCP, UDP, ARP
+        from utils import get_protocol_name
+
+        proto = get_protocol_name(pkt)
+        size  = len(pkt)
+
+        src = "N/A"
+        dst = "N/A"
+        info = ""
+
+        if pkt.haslayer(IP):
+            src = pkt[IP].src
+            dst = pkt[IP].dst
+
+        if pkt.haslayer(ARP):
+            src  = pkt[ARP].psrc
+            dst  = pkt[ARP].pdst
+            info = f"ARP {'Request' if pkt[ARP].op == 1 else 'Reply'} | {pkt[ARP].hwsrc}"
+        elif pkt.haslayer(TCP):
+            info = f"Port {pkt[TCP].sport} → {pkt[TCP].dport}"
+        elif pkt.haslayer(UDP):
+            info = f"Port {pkt[UDP].sport} → {pkt[UDP].dport}"
+
+        entry = {
+            "time"    : datetime.now().strftime("%H:%M:%S"),
+            "src"     : src,
+            "dst"     : dst,
+            "protocol": proto,
+            "size"    : size,
+            "info"    : info,
+        }
+
+        captured_packets.append(pkt)
+        packet_log.append(entry)
+
+        # Keep only last 2000 in memory
+        if len(packet_log) > 2000:
+            packet_log.pop(0)
+
+    except Exception:
+        pass   # silently discard errors – never print to terminal
+
+
+def start_sniffing(interface, filter_str=""):
+    global sniffer_running, sniffer_thread, captured_packets, packet_log
+    if sniffer_running:
+        return {"status": "already_running"}
+
+    captured_packets = []
+    packet_log       = []
+    sniffer_running  = True
+
+    def _run():
+        # Redirect stderr to /dev/null to suppress all Scapy terminal output
+        old_stderr = sys.stderr
+        try:
+            sys.stderr = open(os.devnull, "w")
+        except Exception:
+            pass
+
+        from scapy.all import sniff
+        try:
+            sniff(
+                iface=interface,
+                prn=_process_packet,
+                store=False,
+                stop_filter=lambda x: not sniffer_running,
+                filter=filter_str if filter_str else None,
+            )
+        except Exception:
+            pass   # do not print to terminal
+        finally:
+            try:
+                sys.stderr.close()
+                sys.stderr = old_stderr
+            except Exception:
+                pass
+
+    sniffer_thread = threading.Thread(target=_run, daemon=True)
+    sniffer_thread.start()
+    return {"status": "started"}
+
+
+def stop_sniffing():
+    global sniffer_running
+    sniffer_running = False
+    if captured_packets:
+        try:
+            from scapy.all import wrpcap
+            os.makedirs(os.path.dirname(CAPTURE_FILE), exist_ok=True)
+            wrpcap(CAPTURE_FILE, captured_packets)
+        except Exception:
+            pass
+    return {"status": "stopped", "packets": len(packet_log)}
+
+
+def get_packets(since=0):
+    return packet_log[since:]
+
+def is_running():
+    return sniffer_running
+
+def get_packet_count():
+    return len(packet_log)
+
+def get_capture_path():
+    return CAPTURE_FILE

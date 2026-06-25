@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NetGuard — Packet Sniffer & ARP Detector</title>
+<style>
+/* ── RESET & BASE ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:        #0d1117;
+  --panel:     #161b22;
+  --card:      #1c2230;
+  --border:    #30363d;
+  --accent:    #00d4aa;
+  --red:       #ff4757;
+  --amber:     #ffa502;
+  --green:     #3fb950;
+  --blue:      #58a6ff;
+  --purple:    #bc8cff;
+  --text:      #e6edf3;
+  --muted:     #8b949e;
+  --font-mono: 'Consolas', 'Courier New', monospace;
+  --font-ui:   'Segoe UI', system-ui, sans-serif;
+}
+html, body { height:100%; background:var(--bg); color:var(--text); font-family:var(--font-ui); font-size:13px; overflow:hidden; }
+
+/* ── SCROLLBAR ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:var(--panel); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+/* ── LAYOUT ────────────────────────────────────────────────────── */
+#app    { display:flex; flex-direction:column; height:100vh; }
+#topbar { display:flex; align-items:center; gap:12px; padding:0 20px; height:54px; background:var(--panel); border-bottom:1px solid var(--border); flex-shrink:0; }
+#body   { display:flex; flex:1; overflow:hidden; }
+#sidebar { width:310px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; }
+#main   { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+#statusbar { height:28px; background:var(--panel); border-top:1px solid var(--border); display:flex; align-items:center; padding:0 16px; gap:20px; flex-shrink:0; font-size:11px; color:var(--muted); }
+
+/* ── TOPBAR ────────────────────────────────────────────────────── */
+.logo { font-size:17px; font-weight:700; color:var(--accent); letter-spacing:-0.3px; }
+.logo span { color:var(--muted); font-weight:400; font-size:12px; margin-left:8px; }
+.topbar-right { margin-left:auto; display:flex; align-items:center; gap:16px; }
+.ip-badge { background:var(--card); border:1px solid var(--border); border-radius:6px; padding:4px 12px; font-family:var(--font-mono); font-size:12px; color:var(--accent); }
+.live-dot { width:9px; height:9px; border-radius:50%; background:var(--muted); display:inline-block; transition:background .3s; }
+.live-dot.active { background:var(--green); box-shadow:0 0 8px var(--green); animation:pulse 1.4s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── SIDEBAR SECTIONS ───────────────────────────────────────────── */
+.s-section { border-bottom:1px solid var(--border); padding:14px 16px; }
+.s-title { font-size:10px; font-weight:700; letter-spacing:1px; color:var(--accent); text-transform:uppercase; margin-bottom:12px; }
+label { display:block; font-size:11px; color:var(--muted); margin-bottom:5px; margin-top:10px; }
+label:first-of-type { margin-top:0; }
+
+/* Interface select – styled nicely */
+#iface-select {
+  width:100%; padding:9px 12px;
+  background:var(--bg); color:var(--text);
+  border:1px solid var(--border); border-radius:7px;
+  font-family:var(--font-ui); font-size:12px;
+  outline:none; transition:border-color .15s;
+  cursor:pointer;
+}
+#iface-select:focus { border-color:var(--accent); }
+
+input[type=text] {
+  width:100%; padding:8px 10px;
+  background:var(--bg); color:var(--text);
+  border:1px solid var(--border); border-radius:6px;
+  font-family:var(--font-mono); font-size:12px;
+  outline:none; transition:border-color .15s;
+}
+input[type=text]:focus { border-color:var(--accent); }
+
+/* ── INTERFACE HELP TEXT ───────────────────────────────────────── */
+#iface-hint {
+  font-size:11px; color:var(--muted); margin-top:5px;
+  padding:6px 10px; background:var(--card); border-radius:5px;
+  border-left:3px solid var(--accent); line-height:1.5;
+  display:none;
+}
+
+/* ── BUTTONS ────────────────────────────────────────────────────── */
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:9px 14px; border-radius:7px; border:none; cursor:pointer; font-family:var(--font-ui); font-size:12px; font-weight:600; transition:opacity .15s, transform .1s; }
+.btn:hover { opacity:.88; }
+.btn:active { transform:scale(.97); }
+.btn:disabled { opacity:.35; cursor:not-allowed; }
+.btn-green  { background:var(--green);  color:#000; }
+.btn-red    { background:var(--red);    color:#fff; }
+.btn-ghost  { background:var(--card);   color:var(--text); border:1px solid var(--border); }
+.btn-accent { background:var(--accent); color:#000; }
+.btn-row { display:flex; gap:8px; margin-top:12px; }
+.btn-row .btn { flex:1; }
+.btn-full { width:100%; margin-top:6px; }
+
+/* ── STAT CARDS ─────────────────────────────────────────────────── */
+.stats-row { display:flex; gap:8px; }
+.stat-card { flex:1; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 8px; text-align:center; }
+.stat-val  { font-size:26px; font-weight:700; line-height:1; }
+.stat-lbl  { font-size:10px; color:var(--muted); margin-top:3px; }
+.stat-green { color:var(--green); }
+.stat-red   { color:var(--red); }
+
+/* ── ARP TABLE (sidebar) ──────────────────────────────────────── */
+.arp-scroll { max-height:200px; overflow-y:auto; margin-top:8px; }
+.arp-tbl { width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:11px; }
+.arp-tbl th { background:var(--bg); color:var(--muted); padding:5px 8px; text-align:left; position:sticky; top:0; border-bottom:1px solid var(--border); }
+.arp-tbl td { padding:4px 8px; border-bottom:1px solid #1e242d; word-break:break-all; }
+.arp-tbl tr:hover td { background:var(--card); }
+.arp-empty { color:var(--muted); font-size:11px; text-align:center; padding:16px; }
+
+/* ── TABS ────────────────────────────────────────────────────── */
+#tabs { display:flex; background:var(--panel); border-bottom:1px solid var(--border); padding:0 12px; flex-shrink:0; }
+.tab { padding:11px 18px; font-size:12px; font-weight:600; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; transition:color .15s, border-color .15s; white-space:nowrap; }
+.tab:hover { color:var(--text); }
+.tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.tab-badge { background:var(--red); color:#fff; font-size:10px; padding:1px 6px; border-radius:10px; margin-left:5px; display:none; }
+.tab-badge.show { display:inline; animation:badge-pop .3s; }
+@keyframes badge-pop { 0%{transform:scale(1.4)} 100%{transform:scale(1)} }
+#tab-content { flex:1; overflow:hidden; position:relative; }
+.tab-pane { display:none; height:100%; flex-direction:column; }
+.tab-pane.active { display:flex; }
+
+/* ── PACKET TABLE ─────────────────────────────────────────────── */
+.pkt-wrap { flex:1; overflow:auto; }
+#pkt-table { width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:12px; table-layout:fixed; }
+#pkt-table thead th { background:var(--panel); color:var(--muted); padding:7px 10px; text-align:left; position:sticky; top:0; z-index:2; border-bottom:1px solid var(--border); font-family:var(--font-ui); font-size:11px; font-weight:600; white-space:nowrap; }
+#pkt-table tbody td { padding:5px 10px; border-bottom:1px solid #161b22; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#pkt-table tbody tr:hover td { background:var(--card); }
+.proto { display:inline-block; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:700; }
+.p-arp   { background:#ffa50225; color:var(--amber); }
+.p-http  { background:#3fb95025; color:var(--green); }
+.p-https { background:#58a6ff25; color:var(--blue); }
+.p-tcp   { background:#bc8cff25; color:var(--purple); }
+.p-udp   { background:#00d4aa25; color:var(--accent); }
+.p-icmp  { background:#ff475725; color:var(--red); }
+.p-dns   { background:#ffa50225; color:var(--amber); }
+.p-ssh   { background:#3fb95025; color:var(--green); }
+.p-ftp   { background:#58a6ff25; color:var(--blue); }
+.p-ip    { background:#30363d;   color:var(--muted); }
+.p-other { background:#30363d;   color:var(--muted); }
+.p-unknown { background:#30363d; color:var(--muted); }
+.pkt-toolbar { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--card); border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
+.pkt-toolbar input[type=text], .pkt-toolbar select { background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:12px; outline:none; }
+.pkt-toolbar input[type=text] { max-width:200px; }
+.pkt-toolbar select { max-width:135px; }
+#pkt-count-lbl { margin-left:auto; color:var(--muted); font-size:11px; white-space:nowrap; }
+#auto-scroll-chk { accent-color:var(--accent); }
+
+/* ── ALERT PANEL ─────────────────────────────────────────────── */
+#alert-panel { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:12px; }
+.alert-card {
+  background: linear-gradient(135deg, #ff475710 0%, #ff475705 100%);
+  border:1px solid #ff475755; border-radius:10px; padding:16px 18px;
+  animation: alert-slide .35s ease;
+}
+@keyframes alert-slide { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+.alert-card-hdr { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.alert-badge { background:var(--red); color:#fff; border-radius:6px; padding:3px 9px; font-size:11px; font-weight:700; }
+.alert-time { color:var(--muted); font-size:11px; margin-left:auto; font-family:var(--font-mono); }
+.alert-title { font-size:14px; font-weight:700; color:var(--red); }
+.alert-grid { display:grid; grid-template-columns:140px 1fr; gap:5px 12px; font-size:12px; margin-bottom:10px; }
+.alert-grid .lbl { color:var(--muted); }
+.alert-grid .val { color:var(--text); font-family:var(--font-mono); }
+.alert-grid .val.danger { color:var(--red); font-weight:700; }
+.alert-detail { font-size:11px; color:#ffa50299; background:#ffa50210; border-radius:5px; padding:6px 10px; border-left:3px solid var(--amber); line-height:1.5; }
+#alert-empty { text-align:center; color:var(--muted); margin-top:80px; }
+#alert-empty .icon { font-size:48px; margin-bottom:12px; }
+#alert-empty .title { font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px; }
+#alert-empty .sub { font-size:12px; }
+
+/* ── ALERT BANNER (sidebar) ──────────────────────────────────── */
+.alert-banner { background:#ff475718; border:1px solid var(--red); border-radius:6px; padding:8px 12px; color:var(--red); font-size:12px; display:none; margin-top:10px; font-weight:600; animation:pulse 1.5s infinite; }
+
+/* ── LOG PANEL ───────────────────────────────────────────────── */
+#log-box { flex:1; overflow-y:auto; padding:12px 16px; font-family:var(--font-mono); font-size:11px; color:var(--muted); white-space:pre-wrap; word-break:break-all; background:var(--bg); }
+.log-toolbar { display:flex; gap:8px; padding:8px 12px; background:var(--card); border-bottom:1px solid var(--border); flex-shrink:0; align-items:center; }
+.log-line-arp    { color:var(--amber); }
+.log-line-alert  { color:var(--red); font-weight:700; }
+.log-line-info   { color:var(--muted); }
+.log-line-error  { color:var(--red); }
+
+/* ── NETWORK MAP (ARP MAP) ───────────────────────────────────── */
+#arpmap-panel { flex:1; overflow-y:auto; padding:16px; }
+#arpmap-grid  { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:12px; }
+.arp-node { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; transition:border-color .2s, transform .15s; }
+.arp-node:hover { border-color:var(--accent); transform:translateY(-2px); }
+.arp-node .device-icon { font-size:22px; margin-bottom:8px; }
+.arp-node .ip  { font-family:var(--font-mono); font-size:14px; color:var(--accent); font-weight:700; }
+.arp-node .mac { font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-top:4px; }
+.arp-node .vendor { font-size:11px; color:var(--text); margin-top:4px; opacity:.7; }
+.arp-node.spoofed { border-color:var(--red); background:#ff475710; }
+#arpmap-empty { color:var(--muted); text-align:center; margin-top:80px; font-size:13px; }
+
+/* ── STATUS BAR ─────────────────────────────────────────────── */
+.sb-dot { width:7px; height:7px; border-radius:50%; display:inline-block; background:var(--muted); }
+.sb-dot.on { background:var(--green); box-shadow:0 0 5px var(--green); }
+#sb-status { display:flex; align-items:center; gap:5px; }
+
+/* ── TOAST ──────────────────────────────────────────────────── */
+#toast { position:fixed; bottom:38px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 22px; font-size:13px; opacity:0; transition:opacity .3s, transform .3s; pointer-events:none; z-index:999; white-space:nowrap; }
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── EMPTY PACKET STATE ─────────────────────────────────────── */
+#pkt-empty { text-align:center; color:var(--muted); padding:60px 20px; font-size:12px; }
+#pkt-empty .icon { font-size:36px; margin-bottom:10px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="logo">⬡ NetGuard <span>Packet Sniffer + ARP Spoofing Detector</span></div>
+    <div class="topbar-right">
+      <span class="live-dot" id="live-dot"></span>
+      <div class="ip-badge">🖥 <span id="local-ip">...</span></div>
+    </div>
+  </div>
+
+  <div id="body">
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+
+      <!-- Controls -->
+      <div class="s-section">
+        <div class="s-title">Controls</div>
+
+        <label>Choose Your Network Connection</label>
+        <select id="iface-select" onchange="onIfaceChange()">
+          <option value="">Loading connections...</option>
+        </select>
+        <!-- Human-readable hint shown when an interface is selected -->
+        <div id="iface-hint"></div>
+
+        <label style="margin-top:12px">
+          Packet Filter <span style="color:var(--muted);font-weight:400">(optional)</span>
+        </label>
+        <input type="text" id="filter-input" placeholder="e.g. tcp, arp, port 80 — or leave blank"/>
+
+        <div class="btn-row">
+          <button class="btn btn-green" id="btn-start" onclick="startCapture()">▶ Start</button>
+          <button class="btn btn-red"   id="btn-stop"  onclick="stopCapture()" disabled>■ Stop</button>
+        </div>
+
+        <div id="alert-banner" class="alert-banner">🚨 ARP Spoofing Detected!</div>
+      </div>
+
+      <!-- Stats -->
+      <div class="s-section">
+        <div class="s-title">Live Session Stats</div>
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-val stat-green" id="stat-pkts">0</div>
+            <div class="stat-lbl">Packets</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val stat-red" id="stat-alerts">0</div>
+            <div class="stat-lbl">ARP Alerts</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Files -->
+      <div class="s-section">
+        <div class="s-title">Export</div>
+        <button class="btn btn-ghost btn-full" onclick="openPcap()">📦 Open .pcap in Wireshark</button>
+        <button class="btn btn-ghost btn-full" onclick="openLog()">📄 Open Log File</button>
+      </div>
+
+      <!-- ARP Table (sidebar quick view) -->
+      <div class="s-section" style="flex:1">
+        <div class="s-title" style="display:flex;justify-content:space-between;align-items:center">
+          Known Devices
+          <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="refreshArpTable()">⟳</button>
+        </div>
+        <div class="arp-scroll">
+          <table class="arp-tbl">
+            <thead><tr><th>IP Address</th><th>MAC Address</th></tr></thead>
+            <tbody id="arp-tbody">
+              <tr><td colspan="2" class="arp-empty">No devices found yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /sidebar -->
+
+    <!-- MAIN AREA -->
+    <div id="main">
+      <div id="tabs">
+        <div class="tab active" onclick="switchTab('packets')" id="tab-packets">📡 Live Packets</div>
+        <div class="tab"        onclick="switchTab('alerts')"  id="tab-alerts">🚨 ARP Alerts <span class="tab-badge" id="badge-alerts">0</span></div>
+        <div class="tab"        onclick="switchTab('arpmap')"  id="tab-arpmap">🗺 Network Map</div>
+        <div class="tab"        onclick="switchTab('log')"     id="tab-log">📋 Event Log</div>
+      </div>
+
+      <div id="tab-content">
+
+        <!-- PACKETS TAB -->
+        <div class="tab-pane active" id="pane-packets">
+          <div class="pkt-toolbar">
+            <input type="text" id="search-input" placeholder="🔍 Search packets…" oninput="filterTable()"/>
+            <select id="proto-filter" onchange="filterTable()">
+              <option value="">All Protocols</option>
+              <option>ARP</option><option>HTTP</option><option>HTTPS</option>
+              <option>TCP</option><option>UDP</option><option>DNS</option>
+              <option>ICMP</option><option>SSH</option><option>FTP</option>
+            </select>
+            <label style="margin:0;display:flex;align-items:center;gap:5px;color:var(--muted);font-size:12px">
+              <input type="checkbox" id="auto-scroll-chk" checked> Auto-scroll
+            </label>
+            <button class="btn btn-ghost" style="padding:5px 10px" onclick="clearPackets()">Clear</button>
+            <span id="pkt-count-lbl">0 packets</span>
+          </div>
+          <div class="pkt-wrap" id="pkt-wrap">
+            <div id="pkt-empty">
+              <div class="icon">📡</div>
+              <div>No packets captured yet</div>
+              <div style="margin-top:4px">Select a network connection and press <strong>Start</strong></div>
+            </div>
+            <table id="pkt-table" style="display:none">
+              <thead>
+                <tr>
+                  <th style="width:72px">Time</th>
+                  <th style="width:130px">Source IP</th>
+                  <th style="width:130px">Destination IP</th>
+                  <th style="width:80px">Protocol</th>
+                  <th style="width:62px">Size</th>
+                  <th>Info</th>
+                </tr>
+              </thead>
+              <tbody id="pkt-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ALERTS TAB -->
+        <div class="tab-pane" id="pane-alerts">
+          <div class="pkt-toolbar">
+            <span style="color:var(--red);font-weight:700;font-size:13px">🚨 Real-time ARP Spoofing Alerts</span>
+            <span id="alert-count-lbl" style="color:var(--muted);font-size:11px"></span>
+            <button class="btn btn-ghost" style="padding:4px 10px;margin-left:auto" onclick="clearAlerts()">Clear All</button>
+          </div>
+          <div id="alert-panel">
+            <div id="alert-empty">
+              <div class="icon">🛡</div>
+              <div class="title">Network looks safe</div>
+              <div class="sub">No ARP spoofing detected. Start capturing to monitor.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ARP MAP TAB -->
+        <div class="tab-pane" id="pane-arpmap">
+          <div class="pkt-toolbar">
+            <span style="font-weight:700;font-size:13px">🗺 Discovered Network Devices</span>
+            <span id="device-count-lbl" style="color:var(--muted);font-size:11px"></span>
+            <button class="btn btn-ghost" style="padding:4px 10px;margin-left:auto" onclick="refreshArpTable()">⟳ Refresh</button>
+          </div>
+          <div id="arpmap-panel">
+            <div id="arpmap-grid"></div>
+            <div id="arpmap-empty">Start capturing to discover devices on your network</div>
+          </div>
+        </div>
+
+        <!-- LOG TAB -->
+        <div class="tab-pane" id="pane-log">
+          <div class="log-toolbar">
+            <span style="font-weight:700;font-size:12px">📋 Event Log</span>
+            <button class="btn btn-ghost" style="padding:4px 10px;margin-left:auto" onclick="loadLog()">⟳ Refresh</button>
+            <button class="btn btn-ghost" style="padding:4px 10px" onclick="openLog()">📄 Open File</button>
+          </div>
+          <div id="log-box">No log entries yet. Start a capture session.</div>
+        </div>
+
+      </div><!-- /tab-content -->
+    </div><!-- /main -->
+  </div><!-- /body -->
+
+  <div id="statusbar">
+    <div id="sb-status"><span class="sb-dot" id="sb-dot"></span> <span id="sb-text">Idle</span></div>
+    <span id="sb-iface" style="color:var(--muted)"></span>
+    <span id="sb-pkts">Packets: 0</span>
+    <span id="sb-alerts">Alerts: 0</span>
+    <span style="margin-left:auto">NetGuard v2.0 &nbsp;|&nbsp; Authorised networks only</span>
+  </div>
+
+</div><!-- /app -->
+<div id="toast"></div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────────
+let running     = false;
+let pktSince    = 0;
+let alertSince  = 0;
+let totalPkts   = 0;
+let totalAlerts = 0;
+let pollTimer   = null;
+let allRows     = [];
+let alertedIPs  = new Set();   // IPs that have been flagged (for map highlighting)
+
+// ── INTERFACE ICON / HINT MAP ────────────────────────────────────────────────
+function ifaceIcon(label) {
+  const l = label.toLowerCase();
+  if (l.includes('wi-fi') || l.includes('wireless')) return '📶';
+  if (l.includes('wired') || l.includes('ethernet')) return '🔌';
+  if (l.includes('vpn') || l.includes('tunnel'))     return '🔒';
+  if (l.includes('virtual') || l.includes('docker')) return '💻';
+  if (l.includes('loopback'))                        return '🔁';
+  return '🌐';
+}
+
+function ifaceHint(label) {
+  const l = label.toLowerCase();
+  if (l.includes('wi-fi') || l.includes('wireless'))
+    return 'Your wireless connection to the router. Best for monitoring home/office Wi-Fi traffic.';
+  if (l.includes('wired') || l.includes('ethernet'))
+    return 'A physical cable connection. More reliable for packet capture than Wi-Fi.';
+  if (l.includes('vpn') || l.includes('tunnel'))
+    return 'A VPN or encrypted tunnel adapter. Captures traffic going through the VPN.';
+  if (l.includes('virtual') || l.includes('vmnet') || l.includes('docker'))
+    return 'A virtual network used by VMs or containers. Useful for lab/test environments.';
+  if (l.includes('loopback'))
+    return 'Internal testing interface — only captures traffic on this machine itself.';
+  return 'A network adapter. Select it to start capturing packets on this connection.';
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+window.onload = async () => {
+  await loadInterfaces();
+  await loadLocalIP();
+};
+
+async function loadLocalIP() {
+  try {
+    const r = await fetch('/api/localip');
+    const d = await r.json();
+    document.getElementById('local-ip').textContent = d.ip;
+  } catch(e) {}
+}
+
+async function loadInterfaces() {
+  try {
+    const r = await fetch('/api/interfaces');
+    const ifaces = await r.json();
+    const sel = document.getElementById('iface-select');
+    sel.innerHTML = '<option value="">— Choose a connection —</option>';
+    ifaces.forEach(i => {
+      const o = document.createElement('option');
+      o.value = i.name;
+      // Use human-readable label if provided, fallback to name+ip
+      const label = i.label || `${i.name} (${i.ip})`;
+      o.textContent = ifaceIcon(label) + '  ' + label;
+      o.dataset.label = label;
+      sel.appendChild(o);
+    });
+    onIfaceChange();
+  } catch(e) {
+    showToast('Failed to load network interfaces — is the server running?', true);
+  }
+}
+
+function onIfaceChange() {
+  const sel  = document.getElementById('iface-select');
+  const hint = document.getElementById('iface-hint');
+  const opt  = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) { hint.style.display='none'; return; }
+  const label = opt.dataset.label || opt.textContent;
+  hint.textContent = ifaceHint(label);
+  hint.style.display = 'block';
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('pane-' + name).classList.add('active');
+  if (name === 'log')    loadLog();
+  if (name === 'arpmap') refreshArpTable();
+}
+
+// ── START / STOP ──────────────────────────────────────────────────────────────
+async function startCapture() {
+  const iface = document.getElementById('iface-select').value;
+  const flt   = document.getElementById('filter-input').value.trim();
+  if (!iface) { showToast('Please choose a network connection first', true); return; }
+
+  try {
+    const r = await fetch('/api/start', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({interface: iface, filter: flt})
+    });
+    const d = await r.json();
+    if (d.error) { showToast(d.error, true); return; }
+
+    running = true; pktSince = 0; alertSince = 0;
+    totalPkts = 0; totalAlerts = 0; alertedIPs.clear();
+
+    setUI(true);
+    const optLabel = document.getElementById('iface-select').options[document.getElementById('iface-select').selectedIndex].textContent.replace(/^.\s+/, '');
+    document.getElementById('sb-iface').textContent = optLabel;
+    showToast('Capture started');
+    startPolling();
+  } catch(e) {
+    showToast('Cannot connect to the server', true);
+  }
+}
+
+async function stopCapture() {
+  try {
+    await fetch('/api/stop', {method:'POST'});
+    running = false;
+    clearInterval(pollTimer);
+    setUI(false);
+    showToast(`Session stopped — ${totalPkts} packets captured`);
+    loadLog();
+    refreshArpTable();
+  } catch(e) {}
+}
+
+function setUI(isRunning) {
+  document.getElementById('btn-start').disabled = isRunning;
+  document.getElementById('btn-stop').disabled  = !isRunning;
+  document.getElementById('live-dot').classList.toggle('active', isRunning);
+  document.getElementById('sb-dot').classList.toggle('on', isRunning);
+  document.getElementById('sb-text').textContent = isRunning ? 'Running' : 'Stopped';
+}
+
+// ── POLLING ───────────────────────────────────────────────────────────────────
+function startPolling() { pollTimer = setInterval(poll, 800); }
+
+async function poll() {
+  try {
+    // Packets
+    const pkts = await fetch(`/api/packets?since=${pktSince}`).then(r=>r.json());
+    if (pkts.length) {
+      document.getElementById('pkt-empty').style.display = 'none';
+      document.getElementById('pkt-table').style.display = '';
+      pkts.forEach(p => appendPacketRow(p));
+      pktSince   += pkts.length;
+      totalPkts  += pkts.length;
+      document.getElementById('stat-pkts').textContent    = totalPkts;
+      document.getElementById('sb-pkts').textContent      = `Packets: ${totalPkts}`;
+      document.getElementById('pkt-count-lbl').textContent = `${totalPkts} packet${totalPkts===1?'':'s'}`;
+    }
+
+    // ARP Alerts
+    const alerts = await fetch(`/api/alerts?since=${alertSince}`).then(r=>r.json());
+    if (alerts.length) {
+      const wasZero = totalAlerts === 0;
+      alerts.forEach(a => { appendAlert(a); alertedIPs.add(a.ip); });
+      alertSince  += alerts.length;
+      totalAlerts += alerts.length;
+      document.getElementById('stat-alerts').textContent    = totalAlerts;
+      document.getElementById('sb-alerts').textContent      = `Alerts: ${totalAlerts}`;
+      document.getElementById('badge-alerts').textContent   = totalAlerts;
+      document.getElementById('badge-alerts').classList.add('show');
+      document.getElementById('alert-banner').style.display = 'block';
+      document.getElementById('alert-count-lbl').textContent = `${totalAlerts} alert${totalAlerts===1?'':'s'} detected`;
+      if (wasZero) switchTab('alerts');   // auto-jump to alerts tab on first detection
+    }
+
+    // Refresh ARP table less often
+    if (totalPkts % 15 === 0 || alerts.length) refreshArpTable();
+
+  } catch(e) {}
+}
+
+// ── PACKET TABLE ──────────────────────────────────────────────────────────────
+function appendPacketRow(p) {
+  const tbody = document.getElementById('pkt-tbody');
+  const tr    = document.createElement('tr');
+  tr.dataset.proto = p.protocol.toLowerCase();
+  tr.dataset.text  = [p.src, p.dst, p.protocol, p.info].join(' ').toLowerCase();
+
+  tr.innerHTML = `
+    <td>${p.time}</td>
+    <td>${p.src}</td>
+    <td>${p.dst}</td>
+    <td><span class="proto p-${p.protocol.toLowerCase()}">${p.protocol}</span></td>
+    <td>${p.size}B</td>
+    <td style="color:var(--muted)">${p.info}</td>`;
+
+  tbody.appendChild(tr);
+  allRows.push(tr);
+
+  if (allRows.length > 1000) {
+    const old = allRows.shift();
+    if (old.parentNode) old.parentNode.removeChild(old);
+  }
+
+  if (document.getElementById('auto-scroll-chk').checked) {
+    const wrap = document.getElementById('pkt-wrap');
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+  applyFilter(tr);
+}
+
+function filterTable() { allRows.forEach(tr => applyFilter(tr)); }
+
+function applyFilter(tr) {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const proto  = document.getElementById('proto-filter').value.toLowerCase();
+  const ok = (!search || tr.dataset.text.includes(search)) && (!proto || tr.dataset.proto === proto);
+  tr.style.display = ok ? '' : 'none';
+}
+
+function clearPackets() {
+  document.getElementById('pkt-tbody').innerHTML = '';
+  document.getElementById('pkt-table').style.display = 'none';
+  document.getElementById('pkt-empty').style.display = '';
+  allRows = []; pktSince = 0; totalPkts = 0;
+  document.getElementById('stat-pkts').textContent = '0';
+  document.getElementById('pkt-count-lbl').textContent = '0 packets';
+}
+
+// ── ALERT CARDS ───────────────────────────────────────────────────────────────
+function appendAlert(a) {
+  document.getElementById('alert-empty').style.display = 'none';
+  const panel = document.getElementById('alert-panel');
+  const card  = document.createElement('div');
+  card.className = 'alert-card';
+  card.innerHTML = `
+    <div class="alert-card-hdr">
+      <span class="alert-badge">Alert #${a.count}</span>
+      <span class="alert-title">🚨 ARP Spoofing Detected</span>
+      <span class="alert-time">${a.time}</span>
+    </div>
+    <div class="alert-grid">
+      <span class="lbl">Target IP Address</span>
+      <span class="val">${a.ip}</span>
+      <span class="lbl">Legitimate MAC</span>
+      <span class="val">${a.original_mac}</span>
+      <span class="lbl">Attacker MAC</span>
+      <span class="val danger">⚠ ${a.fake_mac}</span>
+    </div>
+    <div class="alert-detail">
+      ${a.detail || `Device at <strong>${a.ip}</strong> is now responding with a different MAC address — this may indicate a man-in-the-middle attack. The original MAC was <strong>${a.original_mac}</strong> and it is now claiming to be <strong>${a.fake_mac}</strong>.`}
+    </div>`;
+  panel.appendChild(card);
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function clearAlerts() {
+  document.getElementById('alert-panel').innerHTML = `
+    <div id="alert-empty">
+      <div class="icon">🛡</div>
+      <div class="title">Network looks safe</div>
+      <div class="sub">No ARP spoofing detected.</div>
+    </div>`;
+  totalAlerts = 0;
+  alertedIPs.clear();
+  document.getElementById('stat-alerts').textContent = '0';
+  document.getElementById('badge-alerts').classList.remove('show');
+  document.getElementById('alert-banner').style.display = 'none';
+  document.getElementById('alert-count-lbl').textContent = '';
+}
+
+// ── ARP TABLE & NETWORK MAP ───────────────────────────────────────────────────
+async function refreshArpTable() {
+  try {
+    const tbl     = await fetch('/api/arptable').then(r=>r.json());
+    const tbody   = document.getElementById('arp-tbody');
+    const grid    = document.getElementById('arpmap-grid');
+    const empty   = document.getElementById('arpmap-empty');
+    const entries = Object.entries(tbl);
+
+    if (!entries.length) {
+      tbody.innerHTML = `<tr><td colspan="2" class="arp-empty">No devices found yet</td></tr>`;
+      grid.innerHTML  = '';
+      empty.style.display = 'block';
+      document.getElementById('device-count-lbl').textContent = '';
+      return;
+    }
+
+    empty.style.display = 'none';
+    document.getElementById('device-count-lbl').textContent = `${entries.length} device${entries.length===1?'':'s'} found`;
+
+    tbody.innerHTML = entries.map(([ip, mac]) =>
+      `<tr><td>${ip}</td><td style="color:var(--muted)">${mac}</td></tr>`).join('');
+
+    grid.innerHTML = entries.map(([ip, mac]) => {
+      const spoofed = alertedIPs.has(ip);
+      return `
+        <div class="arp-node${spoofed?' spoofed':''}">
+          <div class="device-icon">${spoofed ? '⚠️' : deviceIcon(ip)}</div>
+          <div class="ip">${ip}</div>
+          <div class="mac">${mac}</div>
+          ${spoofed ? '<div class="vendor" style="color:var(--red);font-weight:700">ARP Spoofing Suspected!</div>' : ''}
+        </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+function deviceIcon(ip) {
+  if (ip.endsWith('.1') || ip.endsWith('.254')) return '📡';   // likely gateway/router
+  return '💻';
+}
+
+// ── LOG ───────────────────────────────────────────────────────────────────────
+async function loadLog() {
+  try {
+    const d = await fetch('/api/log').then(r=>r.json());
+    const box = document.getElementById('log-box');
+    box.textContent = d.log || 'No log entries yet.';
+    box.scrollTop = box.scrollHeight;
+  } catch(e) {}
+}
+
+// ── FILE ACTIONS ──────────────────────────────────────────────────────────────
+async function openPcap() {
+  const d = await fetch('/api/openpcap', {method:'POST'}).then(r=>r.json());
+  showToast(d.error ? 'No .pcap file yet — stop a session first' : 'Opening in Wireshark…', !!d.error);
+}
+
+async function openLog() {
+  const d = await fetch('/api/openlog', {method:'POST'}).then(r=>r.json());
+  showToast(d.error ? 'No log file yet — start capturing first' : 'Opening log file…', !!d.error);
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg, isErr=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = isErr ? 'var(--red)' : 'var(--border)';
+  t.style.color = isErr ? 'var(--red)' : 'var(--green)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>

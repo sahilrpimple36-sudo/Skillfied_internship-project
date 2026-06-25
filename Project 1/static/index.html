@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BasicAV — Antivirus Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:         #f0f4ff;
+    --surface:    #ffffff;
+    --surface2:   #e8eeff;
+    --border:     #c0ccf0;
+    --blue:       #2563eb;
+    --blue-dim:   rgba(37,99,235,0.10);
+    --red:        #e11d48;
+    --red-dim:    rgba(225,29,72,0.10);
+    --green:      #059669;
+    --green-dim:  rgba(5,150,105,0.10);
+    --yellow:     #d97706;
+    --text:       #1e293b;
+    --text-muted: #64748b;
+    --mono:       'Share Tech Mono', monospace;
+    --ui:         'Rajdhani', sans-serif;
+    --radius:     10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--ui);
+    background: linear-gradient(135deg, #e0e7ff 0%, #f0fdf4 40%, #fef9c3 70%, #fce7f3 100%);
+    background-attachment: fixed;
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* grid overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(37,99,235,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,99,235,0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1140px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 28px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .shield-icon {
+    width: 52px; height: 52px;
+    background: var(--blue-dim);
+    border: 1px solid rgba(37,99,235,0.30);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+    animation: pulse-border 3s infinite;
+  }
+
+  @keyframes pulse-border {
+    0%,100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.25); }
+    50%      { box-shadow: 0 0 0 7px rgba(37,99,235,0); }
+  }
+
+  .header-text h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .header-text p {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--blue);
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  .version-badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 4px;
+    background: var(--surface);
+  }
+
+  /* ── Sidebar + main layout ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ── Sidebar nav ── */
+  nav {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 0;
+    box-shadow: 0 4px 24px rgba(37,99,235,0.07);
+    position: sticky;
+    top: 20px;
+  }
+
+  nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    color: var(--text-muted);
+    font-family: var(--ui);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    border-left: 3px solid transparent;
+  }
+
+  nav a:hover { color: var(--text); background: var(--surface2); }
+
+  nav a.active {
+    color: var(--blue);
+    background: var(--blue-dim);
+    border-left-color: var(--blue);
+  }
+
+  nav a .icon { font-size: 16px; width: 18px; text-align: center; }
+
+  nav .sep {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 14px;
+  }
+
+  /* ── Pages ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 24px rgba(37,99,235,0.07), 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .card-title {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    color: var(--blue);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px; height: 14px;
+    background: var(--blue);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── Stats row ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(37,99,235,0.06);
+  }
+
+  .stat-box .s-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .stat-box .s-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-top: 6px;
+    transition: color 0.4s;
+  }
+
+  .stat-box.blue   .s-value { color: var(--blue); }
+  .stat-box.red    .s-value { color: var(--red); }
+  .stat-box.green  .s-value { color: var(--green); }
+  .stat-box.yellow .s-value { color: var(--yellow); }
+
+  /* ── Input ── */
+  .input-row { display: flex; gap: 12px; margin-bottom: 14px; }
+
+  input[type=text] {
+    flex: 1;
+    background: #f8faff;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    padding: 11px 14px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type=text]:focus { border-color: var(--blue); }
+  input[type=text]::placeholder { color: var(--text-muted); }
+
+  /* ── Buttons ── */
+  button {
+    font-family: var(--ui);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 11px 22px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: #1d4fd8; transform: translateY(-1px); }
+
+  .btn-danger  { background: var(--red);    color: #fff; }
+  .btn-danger:hover  { opacity: .88; transform: translateY(-1px); }
+
+  .btn-success { background: var(--green);  color: #fff; }
+  .btn-success:hover { opacity: .88; transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--blue);
+    border: 1px solid var(--blue);
+  }
+  .btn-ghost:hover { background: var(--blue-dim); }
+
+  .btn-warn { background: var(--yellow); color: #fff; }
+
+  button:disabled { opacity: .4; cursor: default; transform: none !important; }
+
+  /* ── Progress bar ── */
+  .progress-wrap {
+    background: var(--border);
+    border-radius: 3px;
+    height: 4px;
+    overflow: hidden;
+    margin: 12px 0 6px;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--green));
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.3s;
+  }
+
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--blue);
+    margin-bottom: 4px;
+  }
+
+  .ticker {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Tables ── */
+  .table-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .table-scroll { max-height: 420px; overflow-y: auto; }
+
+  .table-scroll::-webkit-scrollbar { width: 5px; }
+  .table-scroll::-webkit-scrollbar-track { background: #f0f4ff; }
+  .table-scroll::-webkit-scrollbar-thumb { background: #c0ccf0; border-radius: 3px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+
+  thead th {
+    background: #eef2ff;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+
+  td { padding: 10px 14px; vertical-align: middle; }
+
+  .file-name { font-family: var(--mono); font-size: 0.82rem; color: var(--text); word-break: break-all; }
+  .file-path { font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); word-break: break-all; }
+  .file-hash { font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); }
+
+  /* ── Status badges ── */
+  .badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+
+  .badge-clean      { background: var(--green-dim); color: var(--green); border: 1px solid rgba(5,150,105,0.25); }
+  .badge-infected   { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(225,29,72,0.25); }
+  .badge-suspicious { background: rgba(217,119,6,0.12); color: var(--yellow); border: 1px solid rgba(217,119,6,0.3); }
+  .badge-error      { background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); }
+  .badge-skipped    { background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); }
+
+  .threat-text { color: var(--red);  font-size: 0.82rem; font-family: var(--mono); }
+  .clean-text  { color: var(--text-muted); font-size: 0.82rem; }
+
+  /* ── Alerts ── */
+  .alert {
+    padding: 11px 16px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    margin-bottom: 14px;
+  }
+
+  .alert-danger  { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(225,29,72,0.30); }
+  .alert-success { background: var(--green-dim); color: var(--green); border: 1px solid rgba(5,150,105,0.30); }
+  .alert-info    { background: var(--blue-dim);  color: var(--blue);  border: 1px solid rgba(37,99,235,0.30); }
+  .alert-warn    { background: rgba(217,119,6,0.10); color: var(--yellow); border: 1px solid rgba(217,119,6,0.30); }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center;
+    padding: 44px 20px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    letter-spacing: 1px;
+  }
+
+  .empty-state .es-icon { font-size: 2.2rem; margin-bottom: 10px; opacity: 0.45; }
+
+  /* ── Quarantine items ── */
+  .q-item {
+    background: #fff5f7;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--red);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .q-item .q-name { flex: 1; word-break: break-all; }
+  .q-item .q-size { color: var(--text-muted); font-size: 0.72rem; min-width: 64px; text-align: right; }
+  .q-item .q-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  /* ── How it works list ── */
+  .how-list { display: flex; flex-direction: column; gap: 12px; }
+  .how-item {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 14px 16px;
+    background: #f8faff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .how-num {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 1px solid rgba(37,99,235,0.20);
+    border-radius: 4px;
+    padding: 3px 9px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .how-text { font-size: 0.92rem; line-height: 1.6; color: var(--text); }
+  .how-text b { color: var(--blue); }
+
+  /* ── Sig form ── */
+  .sig-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 12px;
+  }
+
+  /* ── Filter bar ── */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-bar button {
+    padding: 6px 16px;
+    font-size: 0.82rem;
+    letter-spacing: 0.5px;
+    border-radius: 6px;
+  }
+  .filter-bar button.active-filter {
+    background: var(--blue-dim);
+    color: var(--blue);
+    border: 1px solid rgba(37,99,235,0.30);
+  }
+
+  /* ── Dashboard summary card ── */
+  .summary-row { font-size: 0.88rem; color: var(--text-muted); line-height: 1.9; }
+  .summary-row b { color: var(--text); }
+
+  /* ── Global scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #f0f4ff; }
+  ::-webkit-scrollbar-thumb { background: #c0ccf0; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <header>
+    <div class="shield-icon">🛡️</div>
+    <div class="header-text">
+      <h1>BasicAV</h1>
+      <p>// SIGNATURE-BASED ANTIVIRUS SIMULATION ENGINE</p>
+    </div>
+    <div class="version-badge">EDU v1.0 &nbsp;|&nbsp; <span id="statusDot" style="color:var(--green)">● ONLINE</span></div>
+  </header>
+
+  <div class="layout">
+
+    <!-- Sidebar nav -->
+    <nav>
+      <a class="active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="icon">🛡️</span>Dashboard</a>
+      <a onclick="showPage('scan')"       id="nav-scan">     <span class="icon">⚡</span>Scanner</a>
+      <a onclick="showPage('results')"   id="nav-results">  <span class="icon">📋</span>Results</a>
+      <a onclick="showPage('quarantine')" id="nav-quarantine"><span class="icon">🔒</span>Quarantine</a>
+      <div class="sep"></div>
+      <a onclick="showPage('signatures')" id="nav-signatures"><span class="icon">🗄️</span>Signatures</a>
+      <a onclick="showPage('log')"        id="nav-log">      <span class="icon">📄</span>Scan Log</a>
+    </nav>
+
+    <!-- Main content -->
+    <main>
+
+      <!-- ══════════════ DASHBOARD ══════════════ -->
+      <div class="page active" id="page-dashboard">
+
+        <div class="stats-row">
+          <div class="stat-box blue">
+            <div class="s-label">Files Scanned</div>
+            <div class="s-value" id="d-total">—</div>
+          </div>
+          <div class="stat-box red">
+            <div class="s-label">Infected</div>
+            <div class="s-value" id="d-infected">—</div>
+          </div>
+          <div class="stat-box yellow">
+            <div class="s-label">Suspicious</div>
+            <div class="s-value" id="d-suspicious">—</div>
+          </div>
+          <div class="stat-box green">
+            <div class="s-label">Clean</div>
+            <div class="s-value" id="d-clean">—</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Last Scan Summary</div>
+          <div class="summary-row" id="d-summary">No scan has been run yet. Go to <b>Scanner</b> to get started.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Quick Start</div>
+          <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.7;margin-bottom:16px;">
+            Generate demo test files (EICAR test, suspicious scripts, clean files, simulated malware)
+            into the <code style="background:#eef2ff;padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:0.8rem;">scan_targets/</code>
+            folder, then scan that folder in the <b>Scanner</b> tab.
+          </p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn-success" onclick="createDemoFiles()">⚡ Create Demo Test Files</button>
+            <button class="btn-primary" onclick="showPage('scan')">▶ Go to Scanner</button>
+          </div>
+          <div id="demo-msg" style="margin-top:12px;font-family:var(--mono);font-size:0.8rem;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">How It Works</div>
+          <div class="how-list">
+            <div class="how-item">
+              <span class="how-num">01</span>
+              <div class="how-text"><b>Signature Scan</b> — Each file is hashed (SHA-256). The hash is compared against the known malware database. A match = infected.</div>
+            </div>
+            <div class="how-item">
+              <span class="how-num">02</span>
+              <div class="how-text"><b>Heuristic Scan</b> — File contents are searched for suspicious byte patterns (cmd.exe /c, PowerShell encoding, WScript.Shell, registry run keys, etc.).</div>
+            </div>
+            <div class="how-item">
+              <span class="how-num">03</span>
+              <div class="how-text"><b>Quarantine</b> — Detected files can be moved to a sandboxed quarantine folder so they cannot run or spread.</div>
+            </div>
+            <div class="how-item">
+              <span class="how-num">⚠</span>
+              <div class="how-text"><b>Note:</b> This tool is for education and ethical use only. It will not detect real-world malware unless real signatures are added.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══════════════ SCANNER ══════════════ -->
+      <div class="page" id="page-scan">
+
+        <div class="card">
+          <div class="card-title">Target Directory or File</div>
+          <div class="input-row">
+            <input type="text" id="scan-path" placeholder="e.g.  scan_targets   or   C:\Users\Name\Downloads"/>
+            <button class="btn-primary" id="btn-scan" onclick="startScan()">▶ Scan</button>
+            <button class="btn-danger"  id="btn-stop" onclick="stopScan()" disabled>⏹ Stop</button>
+          </div>
+          <div id="scan-progress-card" style="display:none;margin-top:4px;">
+            <div class="progress-labels">
+              <span id="prog-label">Starting…</span>
+              <span id="prog-pct">0%</span>
+            </div>
+            <div class="progress-wrap"><div class="progress-bar" id="prog-bar" style="width:0%"></div></div>
+            <div class="ticker" id="prog-file" style="margin-top:5px;">—</div>
+          </div>
+          <div id="scan-alert" style="margin-top:14px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Live Threat Activity Log</div>
+          <div class="table-wrap">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr><th>File</th><th>Status</th><th>Identified Threat</th><th>Action</th></tr>
+                </thead>
+                <tbody id="live-threats">
+                  <tr><td colspan="4"><div class="empty-state"><div class="es-icon">📂</div>No scan executed yet. Enter a path above.</div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══════════════ RESULTS ══════════════ -->
+      <div class="page" id="page-results">
+
+        <div class="filter-bar">
+          <button class="btn-ghost active-filter" onclick="filterResults('all','this')"        id="f-all">All</button>
+          <button class="btn-ghost" onclick="filterResults('infected','this')"   id="f-infected">Infected</button>
+          <button class="btn-ghost" onclick="filterResults('suspicious','this')" id="f-suspicious">Suspicious</button>
+          <button class="btn-ghost" onclick="filterResults('clean','this')"      id="f-clean">Clean</button>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>File</th><th>Size</th><th>Status</th><th>SHA-256</th><th>Threats</th><th>Action</th></tr>
+              </thead>
+              <tbody id="results-body">
+                <tr><td colspan="6"><div class="empty-state"><div class="es-icon">📋</div>Run a scan to see results here.</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══════════════ QUARANTINE ══════════════ -->
+      <div class="page" id="page-quarantine">
+        <div class="card">
+          <div class="card-title">Quarantine Vault</div>
+          <p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:16px;">
+            Files flagged as infected are isolated here. They can no longer execute or spread.
+          </p>
+          <div id="q-list">
+            <div class="empty-state"><div class="es-icon">🔒</div>No files in quarantine.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ SIGNATURES ══════════════ -->
+      <div class="page" id="page-signatures">
+
+        <div class="card">
+          <div class="card-title">Add New Signature</div>
+          <div class="sig-form-row">
+            <input type="text" id="sig-hash"  placeholder="SHA-256 hash (64 hex chars)"/>
+            <input type="text" id="sig-label" placeholder="Threat name  e.g. Trojan.Generic.Demo"/>
+            <button class="btn-primary" onclick="addSignature()">+ Add</button>
+          </div>
+          <div id="sig-msg" style="margin-top:12px;font-family:var(--mono);font-size:0.8rem;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Signature Database &nbsp;<span id="sig-count" style="color:var(--text-muted);letter-spacing:0;font-size:0.78rem;"></span></div>
+          <div class="table-wrap">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>#</th><th>SHA-256 Hash</th><th>Threat Label</th></tr></thead>
+                <tbody id="sig-body">
+                  <tr><td colspan="3"><div class="empty-state"><div class="es-icon">⏳</div>Loading…</div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Heuristic Patterns &nbsp;<span id="pat-count" style="color:var(--text-muted);letter-spacing:0;font-size:0.78rem;"></span></div>
+          <div class="table-wrap">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Pattern</th><th>Label</th></tr></thead>
+                <tbody id="pat-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══════════════ LOG ══════════════ -->
+      <div class="page" id="page-log">
+        <div class="card">
+          <div class="card-title">Scan History Log</div>
+          <div style="display:flex;gap:10px;margin-bottom:14px;">
+            <button class="btn-ghost" onclick="loadLog()" style="padding:7px 16px;font-size:0.82rem;">🔄 Refresh</button>
+            <button class="btn-ghost" onclick="openLogFile()" style="padding:7px 16px;font-size:0.82rem;">📂 Open File</button>
+          </div>
+          <pre id="log-content" style="background:#f8faff;border:1px solid var(--border);border-radius:8px;padding:16px;font-family:var(--mono);font-size:0.75rem;color:var(--text);line-height:1.7;max-height:480px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;">Loading…</pre>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+// ── Navigation ────────────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.getElementById('nav-'  + id).classList.add('active');
+  if (id === 'quarantine') loadQuarantine();
+  if (id === 'signatures') loadSignatures();
+  if (id === 'log')        loadLog();
+  if (id === 'results')    renderAllResults();
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let allResults    = [];
+let currentFilter = 'all';
+let scanPoll      = null;
+let resultsSince  = 0;
+
+// ── Dashboard stats ───────────────────────────────────────────────────────────
+function updateDashboard() {
+  const inf = allResults.filter(r => r.status === 'infected').length;
+  const sus = allResults.filter(r => r.status === 'suspicious').length;
+  const cln = allResults.filter(r => r.status === 'clean').length;
+  document.getElementById('d-total').textContent      = allResults.length || '—';
+  document.getElementById('d-infected').textContent   = allResults.length ? inf : '—';
+  document.getElementById('d-suspicious').textContent = allResults.length ? sus : '—';
+  document.getElementById('d-clean').textContent      = allResults.length ? cln : '—';
+}
+
+// ── Scan ──────────────────────────────────────────────────────────────────────
+async function startScan() {
+  const path = document.getElementById('scan-path').value.trim();
+  if (!path) { showScanAlert('alert-warn', '⚠ Please enter a path to scan.'); return; }
+
+  allResults = []; resultsSince = 0;
+  document.getElementById('live-threats').innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="es-icon">⚡</div>Scanning…</div></td></tr>';
+  document.getElementById('scan-alert').innerHTML   = '';
+  document.getElementById('scan-progress-card').style.display = 'block';
+  document.getElementById('btn-scan').disabled = true;
+  document.getElementById('btn-stop').disabled = false;
+  document.getElementById('statusDot').textContent = '● SCANNING';
+  document.getElementById('statusDot').style.color = 'var(--yellow)';
+
+  const res  = await fetch('/api/scan/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) });
+  const data = await res.json();
+
+  if (data.error) {
+    showScanAlert('alert-danger', '❌ ' + data.error);
+    resetScanUI();
+    return;
+  }
+  scanPoll = setInterval(pollScan, 400);
+}
+
+async function pollScan() {
+  const [prog, newRes] = await Promise.all([
+    fetch('/api/scan/progress').then(r => r.json()),
+    fetch('/api/scan/results?since=' + resultsSince).then(r => r.json())
+  ]);
+
+  const pct = prog.total ? Math.round((prog.scanned / prog.total) * 100) : 0;
+  document.getElementById('prog-bar').style.width   = pct + '%';
+  document.getElementById('prog-pct').textContent   = pct + '%';
+  document.getElementById('prog-label').textContent = prog.status === 'done'
+    ? `Done — ${prog.scanned} files scanned`
+    : `Scanned ${prog.scanned} / ${prog.total} files`;
+  document.getElementById('prog-file').textContent  = prog.current_file || '—';
+
+  if (newRes.length) {
+    allResults = allResults.concat(newRes);
+    resultsSince += newRes.length;
+    appendLiveThreats(newRes);
+    updateDashboard();
+  }
+
+  if (prog.status === 'done' || prog.status === 'stopped' || prog.status === 'error') {
+    clearInterval(scanPoll); scanPoll = null;
+    resetScanUI();
+
+    const inf = allResults.filter(r => r.status === 'infected').length;
+    const sus = allResults.filter(r => r.status === 'suspicious').length;
+    if (inf > 0)
+      showScanAlert('alert-danger', `⚠ Scan complete — ${inf} infected + ${sus} suspicious file(s) found!`);
+    else if (sus > 0)
+      showScanAlert('alert-warn',   `🔶 Scan complete — ${sus} suspicious file(s) found.`);
+    else
+      showScanAlert('alert-success', `✅ Scan complete — all ${allResults.length} file(s) are clean.`);
+
+    document.getElementById('d-summary').innerHTML =
+      `<b>Target:</b> ${esc(prog.target || '—')} &nbsp;|&nbsp; ` +
+      `<b>Files:</b> ${prog.scanned} &nbsp;|&nbsp; ` +
+      `<b>Threats:</b> ${prog.threats} &nbsp;|&nbsp; ` +
+      `<b>Started:</b> ${prog.start_time || '—'} &nbsp;|&nbsp; ` +
+      `<b>Ended:</b> ${prog.end_time || '—'}`;
+  }
+}
+
+function resetScanUI() {
+  document.getElementById('btn-scan').disabled = false;
+  document.getElementById('btn-stop').disabled = true;
+  document.getElementById('statusDot').textContent = '● ONLINE';
+  document.getElementById('statusDot').style.color = 'var(--green)';
+}
+
+function appendLiveThreats(newResults) {
+  const threats = newResults.filter(r => r.status === 'infected' || r.status === 'suspicious');
+  if (!threats.length) return;
+  const tbody = document.getElementById('live-threats');
+  if (tbody.querySelector('[colspan]')) tbody.innerHTML = '';
+  threats.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      `<td><div class="file-name">${esc(r.name)}</div><div class="file-path">${esc(r.path)}</div></td>` +
+      `<td>${statusBadge(r.status)}</td>` +
+      `<td class="threat-text" style="font-size:0.78rem">${r.threats.map(t => '• ' + esc(t)).join('<br>')}</td>` +
+      `<td><button class="btn-danger" style="padding:5px 12px;font-size:0.78rem" onclick="quarantineFile('${esc(r.path)}')">🔒 Quarantine</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function stopScan() {
+  await fetch('/api/scan/stop', { method: 'POST' });
+  clearInterval(scanPoll); scanPoll = null;
+  resetScanUI();
+}
+
+function showScanAlert(cls, msg) {
+  document.getElementById('scan-alert').innerHTML = `<div class="alert ${cls}">${msg}</div>`;
+}
+
+// ── Results ───────────────────────────────────────────────────────────────────
+function filterResults(f, _) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active-filter'));
+  document.getElementById('f-' + f).classList.add('active-filter');
+  renderAllResults();
+}
+
+function renderAllResults() {
+  const tbody = document.getElementById('results-body');
+  const data  = currentFilter === 'all' ? allResults : allResults.filter(r => r.status === currentFilter);
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="es-icon">📋</div>${allResults.length ? 'No results match this filter.' : 'Run a scan to see results here.'}</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(r => `
+    <tr>
+      <td><div class="file-name">${esc(r.name)}</div><div class="file-path">${esc(r.path)}</div></td>
+      <td style="color:var(--text-muted);font-family:var(--mono);font-size:0.78rem">${fmtSize(r.size)}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td class="file-hash">${r.hash ? r.hash.slice(0,16) + '…' : '—'}</td>
+      <td style="font-size:0.78rem">${r.threats.length
+        ? r.threats.map(t => `<span class="threat-text">• ${esc(t)}</span>`).join('<br>')
+        : '<span class="clean-text">None</span>'}</td>
+      <td>${r.status === 'infected' || r.status === 'suspicious'
+        ? `<button class="btn-danger" style="padding:5px 12px;font-size:0.78rem" onclick="quarantineFile('${esc(r.path)}')">🔒 Quarantine</button>`
+        : '<span class="clean-text">—</span>'}</td>
+    </tr>`).join('');
+}
+
+// ── Quarantine ────────────────────────────────────────────────────────────────
+async function quarantineFile(path) {
+  if (!confirm('Move this file to quarantine?\n' + path)) return;
+  const data = await fetch('/api/quarantine/move', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) }).then(r => r.json());
+  if (data.error) alert('Error: ' + data.error);
+  else { alert('✅ File quarantined successfully.'); loadQuarantine(); renderAllResults(); }
+}
+
+async function loadQuarantine() {
+  const data = await fetch('/api/quarantine/list').then(r => r.json());
+  const el   = document.getElementById('q-list');
+  if (!data.length) {
+    el.innerHTML = '<div class="empty-state"><div class="es-icon">✅</div>Quarantine is empty — no threats isolated.</div>';
+    return;
+  }
+  el.innerHTML = `<p style="font-family:var(--mono);font-size:0.78rem;color:var(--red);margin-bottom:12px;">${data.length} file(s) in isolation</p>` +
+    data.map(f => `
+      <div class="q-item">
+        🔒
+        <span class="q-name"><b>${esc(f.name)}</b></span>
+        <span class="q-size">${fmtSize(f.size)}</span>
+        <div class="q-actions">
+          <button class="btn-danger" style="padding:5px 10px;font-size:0.78rem" onclick="deleteQuarantined('${esc(f.name)}')">🗑️ Delete</button>
+        </div>
+      </div>`).join('');
+}
+
+async function deleteQuarantined(name) {
+  if (!confirm('Permanently delete ' + name + '?')) return;
+  const data = await fetch('/api/quarantine/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) }).then(r => r.json());
+  if (data.error) alert('Error: ' + data.error);
+  else loadQuarantine();
+}
+
+// ── Signatures ────────────────────────────────────────────────────────────────
+async function loadSignatures() {
+  const data = await fetch('/api/signatures/list').then(r => r.json());
+  const sigs = data.signatures || [];
+  const pats = data.patterns   || [];
+  document.getElementById('sig-count').textContent = `(${sigs.length} entries)`;
+  document.getElementById('pat-count').textContent = `(${pats.length} patterns)`;
+  document.getElementById('sig-body').innerHTML = sigs.map((s, i) => `
+    <tr>
+      <td style="color:var(--text-muted);font-family:var(--mono);font-size:0.75rem">${i + 1}</td>
+      <td class="file-hash">${esc(s.hash)}</td>
+      <td class="threat-text">${esc(s.label)}</td>
+    </tr>`).join('') || '<tr><td colspan="3"><div class="empty-state"><div class="es-icon">🗄️</div>No signatures.</div></td></tr>';
+  document.getElementById('pat-body').innerHTML = pats.map(p => `
+    <tr>
+      <td class="file-hash">${esc(p.pattern)}</td>
+      <td style="color:var(--text-muted);font-size:0.82rem">${esc(p.label)}</td>
+    </tr>`).join('');
+}
+
+async function addSignature() {
+  const hash  = document.getElementById('sig-hash').value.trim().toLowerCase();
+  const label = document.getElementById('sig-label').value.trim() || 'Custom Signature';
+  const data  = await fetch('/api/signatures/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hash, label }) }).then(r => r.json());
+  const msg   = document.getElementById('sig-msg');
+  if (data.error) {
+    msg.innerHTML = `<span style="color:var(--red)">❌ ${esc(data.error)}</span>`;
+  } else {
+    msg.innerHTML = `<span style="color:var(--green)">✅ Signature added successfully.</span>`;
+    document.getElementById('sig-hash').value  = '';
+    document.getElementById('sig-label').value = '';
+    loadSignatures();
+  }
+}
+
+// ── Log ───────────────────────────────────────────────────────────────────────
+async function loadLog() {
+  const data = await fetch('/api/log').then(r => r.json());
+  const el   = document.getElementById('log-content');
+  el.textContent = data.log || 'No log entries yet.';
+  el.scrollTop   = el.scrollHeight;
+}
+async function openLogFile() { await fetch('/api/log/open', { method: 'POST' }); }
+
+// ── Demo files ────────────────────────────────────────────────────────────────
+async function createDemoFiles() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '⏳ Creating…';
+  const data = await fetch('/api/demo/create', { method: 'POST' }).then(r => r.json());
+  btn.disabled = false; btn.textContent = '⚡ Create Demo Test Files';
+  const el = document.getElementById('demo-msg');
+  if (data.error) {
+    el.innerHTML = `<span style="color:var(--red)">❌ ${esc(data.error)}</span>`;
+  } else {
+    el.innerHTML = `<span style="color:var(--green)">✅ ${esc(data.message)}</span><br><span style="color:var(--text-muted)">Scan path: <code>${esc(data.scan_path)}</code></span>`;
+    document.getElementById('scan-path').value = data.scan_path;
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function statusBadge(s) {
+  const map = { clean:'badge-clean', infected:'badge-infected', suspicious:'badge-suspicious', error:'badge-error', skipped:'badge-skipped' };
+  return `<span class="badge ${map[s] || 'badge-error'}">${s.toUpperCase()}</span>`;
+}
+function fmtSize(b) {
+  if (!b) return '0 B';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+filterResults('all', null);
+updateDashboard();
+</script>
+</body>
+</html>

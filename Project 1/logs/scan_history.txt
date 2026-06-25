@@ -1,0 +1,38 @@
+
+======================================================================
+Scan Target : C:\Project Clg\antivirus_project
+Date/Time   : 2026-06-26 02:40:23
+Files Scanned: 8
+Threats Found: 5
+----------------------------------------------------------------------
+  [SUSPICIOUS] C:\Project Clg\antivirus_project\README.txt
+      [HEURISTIC] Heuristic.WScriptShell (script dropper)
+      [HEURISTIC] Heuristic.CmdExec (command execution)
+  [SUSPICIOUS] C:\Project Clg\antivirus_project\server.py
+      [HEURISTIC] EICAR Test String
+      [HEURISTIC] Heuristic.CmdExec (command execution)
+      [HEURISTIC] Heuristic.AddUser (privilege escalation)
+  [SUSPICIOUS] C:\Project Clg\antivirus_project\signatures.py
+      [HEURISTIC] EICAR Test String
+      [HEURISTIC] Heuristic.RemoteThread (code injection)
+      [HEURISTIC] Heuristic.VirtualAlloc (shellcode loader)
+      [HEURISTIC] Heuristic.WScriptShell (script dropper)
+      [HEURISTIC] Heuristic.CmdExec (command execution)
+      [HEURISTIC] Heuristic.PowerShellEncoded (obfuscated PS)
+      [HEURISTIC] Heuristic.AddUser (privilege escalation)
+      [HEURISTIC] Heuristic.NetworkConnect (C2 callback)
+  [SUSPICIOUS] C:\Project Clg\antivirus_project\static\index.html
+      [HEURISTIC] Heuristic.WScriptShell (script dropper)
+      [HEURISTIC] Heuristic.CmdExec (command execution)
+  [SUSPICIOUS] C:\Project Clg\antivirus_project\__pycache__\signatures.cpython-313.pyc
+      [HEURISTIC] EICAR Test String
+      [HEURISTIC] EICAR Signature Bytes
+      [HEURISTIC] Heuristic.RemoteThread (code injection)
+      [HEURISTIC] Heuristic.VirtualAlloc (shellcode loader)
+      [HEURISTIC] Heuristic.WScriptShell (script dropper)
+      [HEURISTIC] Heuristic.CmdExec (command execution)
+      [HEURISTIC] Heuristic.PowerShellEncoded (obfuscated PS)
+      [HEURISTIC] Heuristic.AddUser (privilege escalation)
+      [HEURISTIC] Heuristic.Persistence (registry run key)
+      [HEURISTIC] Heuristic.NetworkConnect (C2 callback)
+======================================================================

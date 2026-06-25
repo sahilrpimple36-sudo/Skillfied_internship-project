@@ -1,0 +1,6 @@
+[2026-06-26 02:07:49] [INFO] ARP detector started on \Device\NPF_Loopback
+[2026-06-26 02:08:55] [INFO] ARP detector started on \Device\NPF_{7E1BF3E8-AEAB-4D2F-8A64-B3C5960781B3}
+[2026-06-26 02:09:05] [INFO] ARP detector started on \Device\NPF_{1B882132-3768-4DD6-8FE2-14590EE363F9}
+[2026-06-26 02:09:16] [INFO] ARP detector started on \Device\NPF_{C2E1602D-B354-45D4-A284-643E9E37571C}
+[2026-06-26 02:09:22] [INFO] ARP detector started on \Device\NPF_{23A7303A-0795-4508-9C71-7717AAAC51C9}
+[2026-06-26 02:09:29] [INFO] ARP detector started on \Device\NPF_Loopback

