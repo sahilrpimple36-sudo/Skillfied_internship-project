@@ -4,3 +4,88 @@
 [2026-06-26 02:09:16] [INFO] ARP detector started on \Device\NPF_{C2E1602D-B354-45D4-A284-643E9E37571C}
 [2026-06-26 02:09:22] [INFO] ARP detector started on \Device\NPF_{23A7303A-0795-4508-9C71-7717AAAC51C9}
 [2026-06-26 02:09:29] [INFO] ARP detector started on \Device\NPF_Loopback
+[2026-06-27 18:29:49] [INFO] ARP detector started on \Device\NPF_{C8A25624-78F1-4373-8F84-E5C3F01C70E5} (seeded 0 entries from OS cache)
+
+[2026-06-27 18:30:09] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:30:13] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:30:17] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:30:21] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:30:25] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:30:29] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:30:33] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:30:37] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:30:41] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:30:45] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:30:49] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:30:53] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:30:57] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================
+
+[2026-06-27 18:31:01] *** ARP SPOOFING DETECTED ***
+  IP Address   : 192.168.1.1
+  Original MAC : 54:a2:45:34:38:90
+  Fake MAC     : 00:0c:29:ee:10:1e
+==================================================

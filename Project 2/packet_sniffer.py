@@ -2,6 +2,9 @@
 packet_sniffer.py  –  NetGuard
 All captured data is stored in memory and served to the web GUI.
 Nothing is printed to the terminal.
+
+FIX: Rolling window — never drops below MAX_DISPLAY packets visible to UI,
+     keeps full session in captured_packets for pcap export, no hard stop.
 """
 
 import threading
@@ -10,9 +13,11 @@ import sys
 from datetime import datetime
 
 captured_packets = []
-packet_log       = []          # list of dicts for the web UI
+packet_log       = []          # list of dicts for the web UI  (rolling, unbounded for session)
 sniffer_running  = False
 sniffer_thread   = None
+
+MAX_DISPLAY = 5000             # UI keeps last 5000 rows — was 2000 with a pop(0) bug
 
 CAPTURE_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "captures", "session.pcap"
@@ -28,8 +33,8 @@ def _process_packet(pkt):
         proto = get_protocol_name(pkt)
         size  = len(pkt)
 
-        src = "N/A"
-        dst = "N/A"
+        src  = "N/A"
+        dst  = "N/A"
         info = ""
 
         if pkt.haslayer(IP):
@@ -39,7 +44,8 @@ def _process_packet(pkt):
         if pkt.haslayer(ARP):
             src  = pkt[ARP].psrc
             dst  = pkt[ARP].pdst
-            info = f"ARP {'Request' if pkt[ARP].op == 1 else 'Reply'} | {pkt[ARP].hwsrc}"
+            op   = pkt[ARP].op
+            info = f"ARP {'Request' if op == 1 else 'Reply'} | {pkt[ARP].hwsrc}"
         elif pkt.haslayer(TCP):
             info = f"Port {pkt[TCP].sport} → {pkt[TCP].dport}"
         elif pkt.haslayer(UDP):
@@ -57,12 +63,13 @@ def _process_packet(pkt):
         captured_packets.append(pkt)
         packet_log.append(entry)
 
-        # Keep only last 2000 in memory
-        if len(packet_log) > 2000:
-            packet_log.pop(0)
+        # Rolling window: trim only when significantly over limit
+        # (bulk-trim to avoid per-packet overhead)
+        if len(packet_log) > MAX_DISPLAY + 500:
+            del packet_log[:500]
 
     except Exception:
-        pass   # silently discard errors – never print to terminal
+        pass
 
 
 def start_sniffing(interface, filter_str=""):
@@ -75,7 +82,6 @@ def start_sniffing(interface, filter_str=""):
     sniffer_running  = True
 
     def _run():
-        # Redirect stderr to /dev/null to suppress all Scapy terminal output
         old_stderr = sys.stderr
         try:
             sys.stderr = open(os.devnull, "w")
@@ -92,7 +98,7 @@ def start_sniffing(interface, filter_str=""):
                 filter=filter_str if filter_str else None,
             )
         except Exception:
-            pass   # do not print to terminal
+            pass
         finally:
             try:
                 sys.stderr.close()

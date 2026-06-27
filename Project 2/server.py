@@ -75,9 +75,10 @@ def api_stop():
 @app.route("/api/status")
 def api_status():
     return jsonify({
-        "running"      : sniffer.is_running(),
-        "packet_count" : sniffer.get_packet_count(),
-        "alert_count"  : arp.get_alert_count()
+        "running"          : sniffer.is_running(),
+        "packet_count"     : sniffer.get_packet_count(),
+        "alert_count"      : arp.get_alert_count(),
+        "arp_packet_count" : arp.get_arp_packet_count(),
     })
 
 # ── API: live packets (polled) ────────────────────────────────────────────────

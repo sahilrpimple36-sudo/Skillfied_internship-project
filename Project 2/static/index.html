@@ -261,6 +261,12 @@ input[type=text]:focus { border-color:var(--accent); }
             <div class="stat-lbl">ARP Alerts</div>
           </div>
         </div>
+        <div class="stats-row" style="margin-top:8px">
+          <div class="stat-card" style="width:100%">
+            <div class="stat-val" style="color:var(--accent);font-size:22px" id="stat-arp-pkts">0</div>
+            <div class="stat-lbl">ARP Packets Seen</div>
+          </div>
+        </div>
       </div>
 
       <!-- Files -->
@@ -568,6 +574,15 @@ async function poll() {
     // Refresh ARP table less often
     if (totalPkts % 15 === 0 || alerts.length) refreshArpTable();
 
+    // ARP packet count (from status endpoint, fetch occasionally)
+    if (totalPkts % 10 === 0 || alerts.length) {
+      try {
+        const st = await fetch('/api/status').then(r=>r.json());
+        const arpPkts = st.arp_packet_count || 0;
+        document.getElementById('stat-arp-pkts').textContent = arpPkts;
+      } catch(e) {}
+    }
+
   } catch(e) {}
 }
 
@@ -628,7 +643,7 @@ function appendAlert(a) {
   card.innerHTML = `
     <div class="alert-card-hdr">
       <span class="alert-badge">Alert #${a.count}</span>
-      <span class="alert-title">🚨 ARP Spoofing Detected</span>
+      <span class="alert-title">🚨 ARP Spoofing Detected — ${a.op || 'Reply'}</span>
       <span class="alert-time">${a.time}</span>
     </div>
     <div class="alert-grid">
@@ -638,6 +653,8 @@ function appendAlert(a) {
       <span class="val">${a.original_mac}</span>
       <span class="lbl">Attacker MAC</span>
       <span class="val danger">⚠ ${a.fake_mac}</span>
+      <span class="lbl">ARP Operation</span>
+      <span class="val">${a.op || 'Reply (op=2)'}</span>
     </div>
     <div class="alert-detail">
       ${a.detail || `Device at <strong>${a.ip}</strong> is now responding with a different MAC address — this may indicate a man-in-the-middle attack. The original MAC was <strong>${a.original_mac}</strong> and it is now claiming to be <strong>${a.fake_mac}</strong>.`}
