@@ -89,3 +89,4 @@
   Original MAC : 54:a2:45:34:38:90
   Fake MAC     : 00:0c:29:ee:10:1e
 ==================================================
+[2026-06-27 20:33:42] [INFO] ARP detector started on \Device\NPF_{C8A25624-78F1-4373-8F84-E5C3F01C70E5} (seeded 0 entries from OS cache)

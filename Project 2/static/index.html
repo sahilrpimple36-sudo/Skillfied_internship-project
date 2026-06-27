@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>NetGuard — Packet Sniffer & ARP Detector</title>
 <style>
-/* ── RESET & BASE ──────────────────────────────────────────────── */
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --bg:        #0d1117;
@@ -25,12 +25,10 @@
 }
 html, body { height:100%; background:var(--bg); color:var(--text); font-family:var(--font-ui); font-size:13px; overflow:hidden; }
 
-/* ── SCROLLBAR ─────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width:6px; height:6px; }
 ::-webkit-scrollbar-track { background:var(--panel); }
 ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 
-/* ── LAYOUT ────────────────────────────────────────────────────── */
 #app    { display:flex; flex-direction:column; height:100vh; }
 #topbar { display:flex; align-items:center; gap:12px; padding:0 20px; height:54px; background:var(--panel); border-bottom:1px solid var(--border); flex-shrink:0; }
 #body   { display:flex; flex:1; overflow:hidden; }
@@ -38,7 +36,6 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:v
 #main   { flex:1; display:flex; flex-direction:column; overflow:hidden; }
 #statusbar { height:28px; background:var(--panel); border-top:1px solid var(--border); display:flex; align-items:center; padding:0 16px; gap:20px; flex-shrink:0; font-size:11px; color:var(--muted); }
 
-/* ── TOPBAR ────────────────────────────────────────────────────── */
 .logo { font-size:17px; font-weight:700; color:var(--accent); letter-spacing:-0.3px; }
 .logo span { color:var(--muted); font-weight:400; font-size:12px; margin-left:8px; }
 .topbar-right { margin-left:auto; display:flex; align-items:center; gap:16px; }
@@ -47,13 +44,11 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:v
 .live-dot.active { background:var(--green); box-shadow:0 0 8px var(--green); animation:pulse 1.4s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-/* ── SIDEBAR SECTIONS ───────────────────────────────────────────── */
 .s-section { border-bottom:1px solid var(--border); padding:14px 16px; }
 .s-title { font-size:10px; font-weight:700; letter-spacing:1px; color:var(--accent); text-transform:uppercase; margin-bottom:12px; }
 label { display:block; font-size:11px; color:var(--muted); margin-bottom:5px; margin-top:10px; }
 label:first-of-type { margin-top:0; }
 
-/* Interface select – styled nicely */
 #iface-select {
   width:100%; padding:9px 12px;
   background:var(--bg); color:var(--text);
@@ -73,7 +68,6 @@ input[type=text] {
 }
 input[type=text]:focus { border-color:var(--accent); }
 
-/* ── INTERFACE HELP TEXT ───────────────────────────────────────── */
 #iface-hint {
   font-size:11px; color:var(--muted); margin-top:5px;
   padding:6px 10px; background:var(--card); border-radius:5px;
@@ -81,7 +75,6 @@ input[type=text]:focus { border-color:var(--accent); }
   display:none;
 }
 
-/* ── BUTTONS ────────────────────────────────────────────────────── */
 .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:9px 14px; border-radius:7px; border:none; cursor:pointer; font-family:var(--font-ui); font-size:12px; font-weight:600; transition:opacity .15s, transform .1s; }
 .btn:hover { opacity:.88; }
 .btn:active { transform:scale(.97); }
@@ -94,7 +87,6 @@ input[type=text]:focus { border-color:var(--accent); }
 .btn-row .btn { flex:1; }
 .btn-full { width:100%; margin-top:6px; }
 
-/* ── STAT CARDS ─────────────────────────────────────────────────── */
 .stats-row { display:flex; gap:8px; }
 .stat-card { flex:1; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 8px; text-align:center; }
 .stat-val  { font-size:26px; font-weight:700; line-height:1; }
@@ -102,7 +94,6 @@ input[type=text]:focus { border-color:var(--accent); }
 .stat-green { color:var(--green); }
 .stat-red   { color:var(--red); }
 
-/* ── ARP TABLE (sidebar) ──────────────────────────────────────── */
 .arp-scroll { max-height:200px; overflow-y:auto; margin-top:8px; }
 .arp-tbl { width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:11px; }
 .arp-tbl th { background:var(--bg); color:var(--muted); padding:5px 8px; text-align:left; position:sticky; top:0; border-bottom:1px solid var(--border); }
@@ -110,7 +101,6 @@ input[type=text]:focus { border-color:var(--accent); }
 .arp-tbl tr:hover td { background:var(--card); }
 .arp-empty { color:var(--muted); font-size:11px; text-align:center; padding:16px; }
 
-/* ── TABS ────────────────────────────────────────────────────── */
 #tabs { display:flex; background:var(--panel); border-bottom:1px solid var(--border); padding:0 12px; flex-shrink:0; }
 .tab { padding:11px 18px; font-size:12px; font-weight:600; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; transition:color .15s, border-color .15s; white-space:nowrap; }
 .tab:hover { color:var(--text); }
@@ -122,7 +112,6 @@ input[type=text]:focus { border-color:var(--accent); }
 .tab-pane { display:none; height:100%; flex-direction:column; }
 .tab-pane.active { display:flex; }
 
-/* ── PACKET TABLE ─────────────────────────────────────────────── */
 .pkt-wrap { flex:1; overflow:auto; }
 #pkt-table { width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:12px; table-layout:fixed; }
 #pkt-table thead th { background:var(--panel); color:var(--muted); padding:7px 10px; text-align:left; position:sticky; top:0; z-index:2; border-bottom:1px solid var(--border); font-family:var(--font-ui); font-size:11px; font-weight:600; white-space:nowrap; }
@@ -148,7 +137,6 @@ input[type=text]:focus { border-color:var(--accent); }
 #pkt-count-lbl { margin-left:auto; color:var(--muted); font-size:11px; white-space:nowrap; }
 #auto-scroll-chk { accent-color:var(--accent); }
 
-/* ── ALERT PANEL ─────────────────────────────────────────────── */
 #alert-panel { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:12px; }
 .alert-card {
   background: linear-gradient(135deg, #ff475710 0%, #ff475705 100%);
@@ -170,10 +158,8 @@ input[type=text]:focus { border-color:var(--accent); }
 #alert-empty .title { font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px; }
 #alert-empty .sub { font-size:12px; }
 
-/* ── ALERT BANNER (sidebar) ──────────────────────────────────── */
 .alert-banner { background:#ff475718; border:1px solid var(--red); border-radius:6px; padding:8px 12px; color:var(--red); font-size:12px; display:none; margin-top:10px; font-weight:600; animation:pulse 1.5s infinite; }
 
-/* ── LOG PANEL ───────────────────────────────────────────────── */
 #log-box { flex:1; overflow-y:auto; padding:12px 16px; font-family:var(--font-mono); font-size:11px; color:var(--muted); white-space:pre-wrap; word-break:break-all; background:var(--bg); }
 .log-toolbar { display:flex; gap:8px; padding:8px 12px; background:var(--card); border-bottom:1px solid var(--border); flex-shrink:0; align-items:center; }
 .log-line-arp    { color:var(--amber); }
@@ -181,7 +167,6 @@ input[type=text]:focus { border-color:var(--accent); }
 .log-line-info   { color:var(--muted); }
 .log-line-error  { color:var(--red); }
 
-/* ── NETWORK MAP (ARP MAP) ───────────────────────────────────── */
 #arpmap-panel { flex:1; overflow-y:auto; padding:16px; }
 #arpmap-grid  { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:12px; }
 .arp-node { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; transition:border-color .2s, transform .15s; }
@@ -193,16 +178,13 @@ input[type=text]:focus { border-color:var(--accent); }
 .arp-node.spoofed { border-color:var(--red); background:#ff475710; }
 #arpmap-empty { color:var(--muted); text-align:center; margin-top:80px; font-size:13px; }
 
-/* ── STATUS BAR ─────────────────────────────────────────────── */
 .sb-dot { width:7px; height:7px; border-radius:50%; display:inline-block; background:var(--muted); }
 .sb-dot.on { background:var(--green); box-shadow:0 0 5px var(--green); }
 #sb-status { display:flex; align-items:center; gap:5px; }
 
-/* ── TOAST ──────────────────────────────────────────────────── */
 #toast { position:fixed; bottom:38px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 22px; font-size:13px; opacity:0; transition:opacity .3s, transform .3s; pointer-events:none; z-index:999; white-space:nowrap; }
 #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* ── EMPTY PACKET STATE ─────────────────────────────────────── */
 #pkt-empty { text-align:center; color:var(--muted); padding:60px 20px; font-size:12px; }
 #pkt-empty .icon { font-size:36px; margin-bottom:10px; }
 </style>
@@ -210,7 +192,7 @@ input[type=text]:focus { border-color:var(--accent); }
 <body>
 <div id="app">
 
-  <!-- TOP BAR -->
+  
   <div id="topbar">
     <div class="logo">⬡ NetGuard <span>Packet Sniffer + ARP Spoofing Detector</span></div>
     <div class="topbar-right">
@@ -221,10 +203,10 @@ input[type=text]:focus { border-color:var(--accent); }
 
   <div id="body">
 
-    <!-- SIDEBAR -->
+    
     <div id="sidebar">
 
-      <!-- Controls -->
+      
       <div class="s-section">
         <div class="s-title">Controls</div>
 
@@ -232,7 +214,7 @@ input[type=text]:focus { border-color:var(--accent); }
         <select id="iface-select" onchange="onIfaceChange()">
           <option value="">Loading connections...</option>
         </select>
-        <!-- Human-readable hint shown when an interface is selected -->
+        
         <div id="iface-hint"></div>
 
         <label style="margin-top:12px">
@@ -248,7 +230,7 @@ input[type=text]:focus { border-color:var(--accent); }
         <div id="alert-banner" class="alert-banner">🚨 ARP Spoofing Detected!</div>
       </div>
 
-      <!-- Stats -->
+      
       <div class="s-section">
         <div class="s-title">Live Session Stats</div>
         <div class="stats-row">
@@ -269,14 +251,14 @@ input[type=text]:focus { border-color:var(--accent); }
         </div>
       </div>
 
-      <!-- Files -->
+      
       <div class="s-section">
         <div class="s-title">Export</div>
         <button class="btn btn-ghost btn-full" onclick="openPcap()">📦 Open .pcap in Wireshark</button>
         <button class="btn btn-ghost btn-full" onclick="openLog()">📄 Open Log File</button>
       </div>
 
-      <!-- ARP Table (sidebar quick view) -->
+      
       <div class="s-section" style="flex:1">
         <div class="s-title" style="display:flex;justify-content:space-between;align-items:center">
           Known Devices
@@ -292,9 +274,9 @@ input[type=text]:focus { border-color:var(--accent); }
         </div>
       </div>
 
-    </div><!-- /sidebar -->
+    </div>
 
-    <!-- MAIN AREA -->
+    
     <div id="main">
       <div id="tabs">
         <div class="tab active" onclick="switchTab('packets')" id="tab-packets">📡 Live Packets</div>
@@ -305,7 +287,7 @@ input[type=text]:focus { border-color:var(--accent); }
 
       <div id="tab-content">
 
-        <!-- PACKETS TAB -->
+        
         <div class="tab-pane active" id="pane-packets">
           <div class="pkt-toolbar">
             <input type="text" id="search-input" placeholder="🔍 Search packets…" oninput="filterTable()"/>
@@ -343,7 +325,7 @@ input[type=text]:focus { border-color:var(--accent); }
           </div>
         </div>
 
-        <!-- ALERTS TAB -->
+        
         <div class="tab-pane" id="pane-alerts">
           <div class="pkt-toolbar">
             <span style="color:var(--red);font-weight:700;font-size:13px">🚨 Real-time ARP Spoofing Alerts</span>
@@ -359,7 +341,7 @@ input[type=text]:focus { border-color:var(--accent); }
           </div>
         </div>
 
-        <!-- ARP MAP TAB -->
+        
         <div class="tab-pane" id="pane-arpmap">
           <div class="pkt-toolbar">
             <span style="font-weight:700;font-size:13px">🗺 Discovered Network Devices</span>
@@ -372,7 +354,7 @@ input[type=text]:focus { border-color:var(--accent); }
           </div>
         </div>
 
-        <!-- LOG TAB -->
+        
         <div class="tab-pane" id="pane-log">
           <div class="log-toolbar">
             <span style="font-weight:700;font-size:12px">📋 Event Log</span>
@@ -382,9 +364,9 @@ input[type=text]:focus { border-color:var(--accent); }
           <div id="log-box">No log entries yet. Start a capture session.</div>
         </div>
 
-      </div><!-- /tab-content -->
-    </div><!-- /main -->
-  </div><!-- /body -->
+      </div>
+    </div>
+  </div>
 
   <div id="statusbar">
     <div id="sb-status"><span class="sb-dot" id="sb-dot"></span> <span id="sb-text">Idle</span></div>
@@ -394,7 +376,7 @@ input[type=text]:focus { border-color:var(--accent); }
     <span style="margin-left:auto">NetGuard v2.0 &nbsp;|&nbsp; Authorised networks only</span>
   </div>
 
-</div><!-- /app -->
+</div>
 <div id="toast"></div>
 
 <script>
