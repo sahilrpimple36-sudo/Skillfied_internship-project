@@ -37,7 +37,6 @@
     overflow-x: hidden;
   }
 
-  /* grid overlay */
   body::before {
     content: '';
     position: fixed;
@@ -52,7 +51,6 @@
 
   .wrap { position: relative; z-index: 1; max-width: 1140px; margin: 0 auto; padding: 28px 20px 60px; }
 
-  /* ── Header ── */
   header {
     display: flex;
     align-items: center;
@@ -105,7 +103,6 @@
     background: var(--surface);
   }
 
-  /* ── Sidebar + main layout ── */
   .layout {
     display: grid;
     grid-template-columns: 200px 1fr;
@@ -113,7 +110,6 @@
     align-items: start;
   }
 
-  /* ── Sidebar nav ── */
   nav {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -157,11 +153,9 @@
     margin: 8px 14px;
   }
 
-  /* ── Pages ── */
   .page { display: none; }
   .page.active { display: block; }
 
-  /* ── Cards ── */
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -192,7 +186,6 @@
     flex-shrink: 0;
   }
 
-  /* ── Stats row ── */
   .stats-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -229,7 +222,6 @@
   .stat-box.green  .s-value { color: var(--green); }
   .stat-box.yellow .s-value { color: var(--yellow); }
 
-  /* ── Input ── */
   .input-row { display: flex; gap: 12px; margin-bottom: 14px; }
 
   input[type=text] {
@@ -248,7 +240,6 @@
   input[type=text]:focus { border-color: var(--blue); }
   input[type=text]::placeholder { color: var(--text-muted); }
 
-  /* ── Buttons ── */
   button {
     font-family: var(--ui);
     font-size: 0.95rem;
@@ -283,7 +274,6 @@
 
   button:disabled { opacity: .4; cursor: default; transform: none !important; }
 
-  /* ── Progress bar ── */
   .progress-wrap {
     background: var(--border);
     border-radius: 3px;
@@ -318,7 +308,6 @@
     white-space: nowrap;
   }
 
-  /* ── Tables ── */
   .table-wrap {
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -358,7 +347,6 @@
   .file-path { font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); word-break: break-all; }
   .file-hash { font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); }
 
-  /* ── Status badges ── */
   .badge {
     display: inline-block;
     padding: 3px 9px;
@@ -378,7 +366,6 @@
   .threat-text { color: var(--red);  font-size: 0.82rem; font-family: var(--mono); }
   .clean-text  { color: var(--text-muted); font-size: 0.82rem; }
 
-  /* ── Alerts ── */
   .alert {
     padding: 11px 16px;
     border-radius: 8px;
@@ -392,7 +379,6 @@
   .alert-info    { background: var(--blue-dim);  color: var(--blue);  border: 1px solid rgba(37,99,235,0.30); }
   .alert-warn    { background: rgba(217,119,6,0.10); color: var(--yellow); border: 1px solid rgba(217,119,6,0.30); }
 
-  /* ── Empty state ── */
   .empty-state {
     text-align: center;
     padding: 44px 20px;
@@ -404,7 +390,6 @@
 
   .empty-state .es-icon { font-size: 2.2rem; margin-bottom: 10px; opacity: 0.45; }
 
-  /* ── Quarantine items ── */
   .q-item {
     background: #fff5f7;
     border: 1px solid var(--border);
@@ -424,7 +409,6 @@
   .q-item .q-size { color: var(--text-muted); font-size: 0.72rem; min-width: 64px; text-align: right; }
   .q-item .q-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
-  /* ── How it works list ── */
   .how-list { display: flex; flex-direction: column; gap: 12px; }
   .how-item {
     display: flex;
@@ -449,14 +433,13 @@
   .how-text { font-size: 0.92rem; line-height: 1.6; color: var(--text); }
   .how-text b { color: var(--blue); }
 
-  /* ── Sig form ── */
   .sig-form-row {
     display: grid;
     grid-template-columns: 1fr 1fr auto;
     gap: 12px;
   }
 
-  /* ── Filter bar ── */
+  
   .filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
   .filter-bar button {
     padding: 6px 16px;
@@ -470,11 +453,9 @@
     border: 1px solid rgba(37,99,235,0.30);
   }
 
-  /* ── Dashboard summary card ── */
   .summary-row { font-size: 0.88rem; color: var(--text-muted); line-height: 1.9; }
   .summary-row b { color: var(--text); }
 
-  /* ── Global scrollbar ── */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: #f0f4ff; }
   ::-webkit-scrollbar-thumb { background: #c0ccf0; border-radius: 3px; }
@@ -483,7 +464,7 @@
 <body>
 <div class="wrap">
 
-  <!-- Header -->
+  
   <header>
     <div class="shield-icon">🛡️</div>
     <div class="header-text">
@@ -495,7 +476,7 @@
 
   <div class="layout">
 
-    <!-- Sidebar nav -->
+    
     <nav>
       <a class="active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="icon">🛡️</span>Dashboard</a>
       <a onclick="showPage('scan')"       id="nav-scan">     <span class="icon">⚡</span>Scanner</a>
@@ -506,10 +487,10 @@
       <a onclick="showPage('log')"        id="nav-log">      <span class="icon">📄</span>Scan Log</a>
     </nav>
 
-    <!-- Main content -->
+    
     <main>
 
-      <!-- ══════════════ DASHBOARD ══════════════ -->
+      
       <div class="page active" id="page-dashboard">
 
         <div class="stats-row">
@@ -574,7 +555,7 @@
 
       </div>
 
-      <!-- ══════════════ SCANNER ══════════════ -->
+      
       <div class="page" id="page-scan">
 
         <div class="card">
@@ -613,7 +594,7 @@
 
       </div>
 
-      <!-- ══════════════ RESULTS ══════════════ -->
+      
       <div class="page" id="page-results">
 
         <div class="filter-bar">
@@ -638,7 +619,7 @@
 
       </div>
 
-      <!-- ══════════════ QUARANTINE ══════════════ -->
+      
       <div class="page" id="page-quarantine">
         <div class="card">
           <div class="card-title">Quarantine Vault</div>
@@ -651,7 +632,7 @@
         </div>
       </div>
 
-      <!-- ══════════════ SIGNATURES ══════════════ -->
+      
       <div class="page" id="page-signatures">
 
         <div class="card">
@@ -692,7 +673,7 @@
 
       </div>
 
-      <!-- ══════════════ LOG ══════════════ -->
+      
       <div class="page" id="page-log">
         <div class="card">
           <div class="card-title">Scan History Log</div>
@@ -709,7 +690,7 @@
 </div>
 
 <script>
-// ── Navigation ────────────────────────────────────────────────────────────────
+
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
@@ -721,13 +702,11 @@ function showPage(id) {
   if (id === 'results')    renderAllResults();
 }
 
-// ── State ─────────────────────────────────────────────────────────────────────
 let allResults    = [];
 let currentFilter = 'all';
 let scanPoll      = null;
 let resultsSince  = 0;
 
-// ── Dashboard stats ───────────────────────────────────────────────────────────
 function updateDashboard() {
   const inf = allResults.filter(r => r.status === 'infected').length;
   const sus = allResults.filter(r => r.status === 'suspicious').length;
@@ -738,7 +717,6 @@ function updateDashboard() {
   document.getElementById('d-clean').textContent      = allResults.length ? cln : '—';
 }
 
-// ── Scan ──────────────────────────────────────────────────────────────────────
 async function startScan() {
   const path = document.getElementById('scan-path').value.trim();
   if (!path) { showScanAlert('alert-warn', '⚠ Please enter a path to scan.'); return; }
@@ -839,7 +817,6 @@ function showScanAlert(cls, msg) {
   document.getElementById('scan-alert').innerHTML = `<div class="alert ${cls}">${msg}</div>`;
 }
 
-// ── Results ───────────────────────────────────────────────────────────────────
 function filterResults(f, _) {
   currentFilter = f;
   document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active-filter'));
@@ -869,7 +846,6 @@ function renderAllResults() {
     </tr>`).join('');
 }
 
-// ── Quarantine ────────────────────────────────────────────────────────────────
 async function quarantineFile(path) {
   if (!confirm('Move this file to quarantine?\n' + path)) return;
   const data = await fetch('/api/quarantine/move', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) }).then(r => r.json());
@@ -903,7 +879,6 @@ async function deleteQuarantined(name) {
   else loadQuarantine();
 }
 
-// ── Signatures ────────────────────────────────────────────────────────────────
 async function loadSignatures() {
   const data = await fetch('/api/signatures/list').then(r => r.json());
   const sigs = data.signatures || [];
@@ -938,7 +913,6 @@ async function addSignature() {
   }
 }
 
-// ── Log ───────────────────────────────────────────────────────────────────────
 async function loadLog() {
   const data = await fetch('/api/log').then(r => r.json());
   const el   = document.getElementById('log-content');
@@ -947,7 +921,6 @@ async function loadLog() {
 }
 async function openLogFile() { await fetch('/api/log/open', { method: 'POST' }); }
 
-// ── Demo files ────────────────────────────────────────────────────────────────
 async function createDemoFiles() {
   const btn = event.target;
   btn.disabled = true; btn.textContent = '⏳ Creating…';
@@ -962,7 +935,6 @@ async function createDemoFiles() {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function statusBadge(s) {
   const map = { clean:'badge-clean', infected:'badge-infected', suspicious:'badge-suspicious', error:'badge-error', skipped:'badge-skipped' };
   return `<span class="badge ${map[s] || 'badge-error'}">${s.toUpperCase()}</span>`;

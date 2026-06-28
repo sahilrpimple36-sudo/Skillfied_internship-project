@@ -1,9 +1,3 @@
-"""
-scanner.py — Core Antivirus Scan Engine
-Handles file hashing, signature matching, heuristic pattern scanning,
-quarantine operations, and result aggregation.
-"""
-
 import os
 import hashlib
 import shutil
@@ -15,7 +9,6 @@ from typing import Optional
 
 from signatures import get_all_signatures, get_all_patterns, add_signature
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR       = Path(__file__).parent
 QUARANTINE_DIR = BASE_DIR / "quarantine"
 LOGS_DIR       = BASE_DIR / "logs"
@@ -24,9 +17,8 @@ SCAN_LOG       = LOGS_DIR / "scan_history.txt"
 QUARANTINE_DIR.mkdir(exist_ok=True)
 LOGS_DIR.mkdir(exist_ok=True)
 
-# ── Shared scan state ─────────────────────────────────────────────────────────
 _lock         = threading.Lock()
-_scan_results : list[dict] = []          # all per-file results from current/last scan
+_scan_results : list[dict] = []          
 _scan_running : bool       = False
 _scan_progress: dict       = {
     "current_file": "",
@@ -35,13 +27,10 @@ _scan_progress: dict       = {
     "threats": 0,
     "start_time": None,
     "end_time": None,
-    "status": "idle",                    # idle | running | done | error
+    "status": "idle",                    
 }
 
-
-# ── Hashing ───────────────────────────────────────────────────────────────────
 def _hash_file(path: str) -> Optional[str]:
-    """Return SHA-256 hex digest of a file, or None on I/O error."""
     h = hashlib.sha256()
     try:
         with open(path, "rb") as f:
@@ -51,19 +40,14 @@ def _hash_file(path: str) -> Optional[str]:
     except (PermissionError, OSError):
         return None
 
-
 def _scan_single_file(filepath: str) -> dict:
-    """
-    Scan one file. Returns a result dict with keys:
-      path, size, hash, status, threats, scan_type, timestamp
-    """
     path    = Path(filepath)
     result  = {
         "path"      : str(path),
         "name"      : path.name,
         "size"      : 0,
         "hash"      : None,
-        "status"    : "clean",           # clean | infected | suspicious | error | skipped
+        "status"    : "clean",           
         "threats"   : [],
         "scan_type" : [],
         "timestamp" : datetime.now().isoformat(timespec="seconds"),
@@ -83,7 +67,7 @@ def _scan_single_file(filepath: str) -> dict:
     except OSError:
         pass
 
-    # ── 1. Signature scan ─────────────────────────────────────────────────────
+    
     file_hash = _hash_file(str(path))
     result["hash"] = file_hash
 
@@ -98,10 +82,10 @@ def _scan_single_file(filepath: str) -> dict:
         result["threats"].append(f"[SIGNATURE] {sigs[file_hash]}")
         result["scan_type"].append("signature")
 
-    # ── 2. Heuristic pattern scan ─────────────────────────────────────────────
+    
     try:
         with open(str(path), "rb") as f:
-            raw = f.read(1_048_576)          # read up to 1 MB for pattern matching
+            raw = f.read(1_048_576)          
         for pat in get_all_patterns():
             if pat["pattern"] in raw:
                 if result["status"] == "clean":
@@ -114,9 +98,7 @@ def _scan_single_file(filepath: str) -> dict:
 
     return result
 
-
 def _collect_files(path: str) -> list[str]:
-    """Recursively collect all files under a path (file or directory)."""
     p = Path(path)
     if p.is_file():
         return [str(p)]
@@ -126,13 +108,7 @@ def _collect_files(path: str) -> list[str]:
             files.append(os.path.join(root, fn))
     return files
 
-
-# ── Public API ────────────────────────────────────────────────────────────────
 def start_scan(target_path: str) -> dict:
-    """
-    Launch a background scan of target_path (file or folder).
-    Returns immediately; poll get_progress() / get_results() for updates.
-    """
     global _scan_running, _scan_results, _scan_progress
 
     with _lock:
@@ -155,7 +131,6 @@ def start_scan(target_path: str) -> dict:
     threading.Thread(target=_run_scan, args=(target_path,), daemon=True).start()
     return {"started": True, "target": target_path}
 
-
 def _run_scan(target_path: str):
     global _scan_running, _scan_results, _scan_progress
 
@@ -177,7 +152,7 @@ def _run_scan(target_path: str):
                 if res["status"] in ("infected", "suspicious"):
                     _scan_progress["threats"] += 1
 
-            time.sleep(0.05)       # slight delay so the UI can animate
+            time.sleep(0.05)       
 
         with _lock:
             _scan_results              = results
@@ -194,7 +169,6 @@ def _run_scan(target_path: str):
             _scan_running              = False
         _write_log(target_path, [], error=str(exc))
 
-
 def stop_scan() -> dict:
     global _scan_running
     with _lock:
@@ -205,30 +179,23 @@ def stop_scan() -> dict:
         _scan_progress["end_time"] = datetime.now().isoformat(timespec="seconds")
     return {"stopped": True}
 
-
 def get_progress() -> dict:
     with _lock:
         return dict(_scan_progress)
-
 
 def get_results(since: int = 0) -> list[dict]:
     with _lock:
         return _scan_results[since:]
 
-
 def is_running() -> bool:
     with _lock:
         return _scan_running
-
 
 def get_threat_count() -> int:
     with _lock:
         return _scan_progress.get("threats", 0)
 
-
-# ── Quarantine ────────────────────────────────────────────────────────────────
 def quarantine_file(filepath: str) -> dict:
-    """Move a file to the quarantine folder."""
     src = Path(filepath)
     if not src.exists():
         return {"error": f"File not found: {filepath}"}
@@ -240,7 +207,6 @@ def quarantine_file(filepath: str) -> dict:
         return {"quarantined": True, "original": str(src), "quarantine_path": str(dest)}
     except Exception as e:
         return {"error": str(e)}
-
 
 def get_quarantine_list() -> list[dict]:
     items = []
@@ -254,9 +220,7 @@ def get_quarantine_list() -> list[dict]:
             })
     return sorted(items, key=lambda x: x["modified"], reverse=True)
 
-
 def restore_file(quarantine_name: str, restore_path: str) -> dict:
-    """Restore a quarantined file back to a given path."""
     src = QUARANTINE_DIR / quarantine_name
     if not src.exists():
         return {"error": "Quarantined file not found"}
@@ -267,7 +231,6 @@ def restore_file(quarantine_name: str, restore_path: str) -> dict:
     except Exception as e:
         return {"error": str(e)}
 
-
 def delete_quarantined(quarantine_name: str) -> dict:
     f = QUARANTINE_DIR / quarantine_name
     if not f.exists():
@@ -275,16 +238,12 @@ def delete_quarantined(quarantine_name: str) -> dict:
     f.unlink()
     return {"deleted": True}
 
-
-# ── Custom Signature ──────────────────────────────────────────────────────────
 def add_custom_signature(sha256: str, label: str) -> dict:
     ok = add_signature(sha256, label)
     if ok:
         return {"added": True, "hash": sha256, "label": label}
     return {"error": "Invalid SHA-256 hash (must be 64 hex chars)"}
 
-
-# ── Logging ───────────────────────────────────────────────────────────────────
 def _write_log(target: str, results: list[dict], error: str = ""):
     try:
         with open(SCAN_LOG, "a", encoding="utf-8") as f:
@@ -306,7 +265,6 @@ def _write_log(target: str, results: list[dict], error: str = ""):
     except Exception:
         pass
 
-
 def _log_quarantine(original: str, dest: str):
     try:
         with open(SCAN_LOG, "a", encoding="utf-8") as f:
@@ -316,12 +274,10 @@ def _log_quarantine(original: str, dest: str):
     except Exception:
         pass
 
-
 def get_log_contents() -> str:
     if SCAN_LOG.exists():
         return SCAN_LOG.read_text(encoding="utf-8", errors="replace")
     return "No scan log yet."
-
 
 def get_log_path() -> str:
     return str(SCAN_LOG)
